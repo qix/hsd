@@ -2,36 +2,36 @@
 /* eslint prefer-arrow-callback: "off" */
 /* eslint no-return-assign: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const Chain = require('../lib/blockchain/chain');
-const WorkerPool = require('../lib/workers/workerpool');
-const Miner = require('../lib/mining/miner');
-const MemWallet = require('./util/memwallet');
-const Network = require('../lib/protocol/network');
-const rules = require('../lib/covenants/rules');
-const ownership = require('../lib/covenants/ownership');
+const assert = require("bsert");
+const Chain = require("../lib/blockchain/chain");
+const WorkerPool = require("../lib/workers/workerpool");
+const Miner = require("../lib/mining/miner");
+const MemWallet = require("./util/memwallet");
+const Network = require("../lib/protocol/network");
+const rules = require("../lib/covenants/rules");
+const ownership = require("../lib/covenants/ownership");
 
-const network = Network.get('regtest');
+const network = Network.get("regtest");
 const NAME1 = rules.grindName(10, 20, network);
 const NAME2 = rules.grindName(10, 20, network);
 
 const workers = new WorkerPool({
   // Must be disabled for `ownership.ignore`.
-  enabled: false
+  enabled: false,
 });
 
 function createNode() {
   const chain = new Chain({
     memory: true,
     network,
-    workers
+    workers,
   });
 
   const miner = new Miner({
     chain,
-    workers
+    workers,
   });
 
   return {
@@ -41,11 +41,11 @@ function createNode() {
     wallet: () => {
       const wallet = new MemWallet({ network });
 
-      chain.on('connect', (entry, block) => {
+      chain.on("connect", (entry, block) => {
         wallet.addBlock(entry, block.txs);
       });
 
-      chain.on('disconnect', (entry, block) => {
+      chain.on("disconnect", (entry, block) => {
         wallet.removeBlock(entry, block.txs);
       });
 
@@ -58,37 +58,37 @@ function createNode() {
       };
 
       return wallet;
-    }
+    },
   };
 }
 
-describe('Auction', function() {
+describe("Auction", function () {
   this.timeout(15000);
 
-  describe('Vickrey Auction', function() {
+  describe("Vickrey Auction", function () {
     const node = createNode();
     const orig = createNode();
     const comp = createNode();
 
-    const {chain, miner, cpu} = node;
+    const { chain, miner, cpu } = node;
 
     const winner = node.wallet();
     const runnerup = node.wallet();
 
     let snapshot = null;
 
-    it('should open chain and miner', async () => {
+    it("should open chain and miner", async () => {
       await chain.open();
       await miner.open();
     });
 
-    it('should add addrs to miner', async () => {
+    it("should add addrs to miner", async () => {
       miner.addresses.length = 0;
       miner.addAddress(winner.getReceive());
       miner.addAddress(runnerup.getReceive());
     });
 
-    it('should mine 20 blocks', async () => {
+    it("should mine 20 blocks", async () => {
       for (let i = 0; i < 20; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -96,7 +96,7 @@ describe('Auction', function() {
       }
     });
 
-    it('should open auction', async () => {
+    it("should open auction", async () => {
       const mtx = await winner.createOpen(NAME1);
 
       const job = await cpu.createJob();
@@ -108,7 +108,7 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should mine blocks', async () => {
+    it("should mine blocks", async () => {
       for (let i = 0; i < network.names.treeInterval; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -116,7 +116,7 @@ describe('Auction', function() {
       }
     });
 
-    it('should open a bid', async () => {
+    it("should open a bid", async () => {
       const mtx1 = await winner.createBid(NAME1, 1000, 2000);
       const mtx2 = await runnerup.createBid(NAME1, 500, 2000);
 
@@ -130,7 +130,7 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should mine 10 blocks', async () => {
+    it("should mine 10 blocks", async () => {
       for (let i = 0; i < 10; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -138,7 +138,7 @@ describe('Auction', function() {
       }
     });
 
-    it('should reveal a bid', async () => {
+    it("should reveal a bid", async () => {
       const mtx1 = await winner.createReveal(NAME1);
       const mtx2 = await runnerup.createReveal(NAME1);
 
@@ -152,7 +152,7 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should mine 20 blocks', async () => {
+    it("should mine 20 blocks", async () => {
       for (let i = 0; i < 20; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -160,8 +160,8 @@ describe('Auction', function() {
       }
     });
 
-    it('should register a name', async () => {
-      const mtx = await winner.createRegister(NAME1, Buffer.from([1,2,3]));
+    it("should register a name", async () => {
+      const mtx = await winner.createRegister(NAME1, Buffer.from([1, 2, 3]));
 
       assert(mtx.outputs.length > 0);
 
@@ -177,7 +177,7 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should mine 10 blocks', async () => {
+    it("should mine 10 blocks", async () => {
       for (let i = 0; i < 10; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -185,8 +185,8 @@ describe('Auction', function() {
       }
     });
 
-    it('should register again and update tree', async () => {
-      const mtx = await winner.createUpdate(NAME1, Buffer.from([1,2,4]));
+    it("should register again and update tree", async () => {
+      const mtx = await winner.createUpdate(NAME1, Buffer.from([1, 2, 4]));
 
       const job = await cpu.createJob();
       job.addTX(mtx.toTX(), mtx.view);
@@ -197,7 +197,7 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should redeem', async () => {
+    it("should redeem", async () => {
       const mtx = await runnerup.createRedeem(NAME1);
 
       const job = await cpu.createJob();
@@ -209,7 +209,7 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should renew', async () => {
+    it("should renew", async () => {
       const mtx = await winner.createRenewal(NAME1);
 
       const job = await cpu.createJob();
@@ -221,7 +221,7 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should fail renew', async () => {
+    it("should fail renew", async () => {
       const mtx = await winner.createRenewal(NAME1);
 
       const job = await cpu.createJob();
@@ -239,10 +239,10 @@ describe('Auction', function() {
       }
 
       assert(err);
-      assert.strictEqual(err.reason, 'bad-renewal-premature');
+      assert.strictEqual(err.reason, "bad-renewal-premature");
     });
 
-    it('should mine 10 blocks', async () => {
+    it("should mine 10 blocks", async () => {
       for (let i = 0; i < 10; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -251,18 +251,18 @@ describe('Auction', function() {
 
       snapshot = {
         treeRoot: chain.tip.treeRoot,
-        ns: await chain.db.getNameStateByName(NAME1)
+        ns: await chain.db.getNameStateByName(NAME1),
       };
     });
 
-    it('should open other nodes', async () => {
+    it("should open other nodes", async () => {
       await orig.chain.open();
       await orig.miner.open();
       await comp.chain.open();
       await comp.miner.open();
     });
 
-    it('should clone the chain', async () => {
+    it("should clone the chain", async () => {
       for (let i = 1; i <= chain.height; i++) {
         const block = await chain.getBlock(i);
         assert(block);
@@ -270,7 +270,7 @@ describe('Auction', function() {
       }
     });
 
-    it('should mine a competing chain', async () => {
+    it("should mine a competing chain", async () => {
       while (comp.chain.tip.chainwork.lte(chain.tip.chainwork)) {
         const block = await comp.cpu.mineBlock();
         assert(block);
@@ -278,10 +278,10 @@ describe('Auction', function() {
       }
     });
 
-    it('should reorg the auction', async () => {
+    it("should reorg the auction", async () => {
       let reorgd = false;
 
-      chain.once('reorganize', () => reorgd = true);
+      chain.once("reorganize", () => (reorgd = true));
 
       // chain.on('disconnect', async () => {
       //   const ns = await chain.db.getNameStateByName(NAME1);
@@ -302,10 +302,10 @@ describe('Auction', function() {
       assert(!ns);
     });
 
-    it('should reorg back to the correct state', async () => {
+    it("should reorg back to the correct state", async () => {
       let reorgd = false;
 
-      chain.once('reorganize', () => reorgd = true);
+      chain.once("reorganize", () => (reorgd = true));
 
       // chain.on('connect', async () => {
       //   const ns = await chain.db.getNameStateByName(NAME1);
@@ -321,14 +321,14 @@ describe('Auction', function() {
       }
     });
 
-    it('should close other nodes', async () => {
+    it("should close other nodes", async () => {
       await orig.miner.close();
       await orig.chain.close();
       await comp.miner.close();
       await comp.chain.close();
     });
 
-    it('should mine 10 blocks', async () => {
+    it("should mine 10 blocks", async () => {
       for (let i = 0; i < 10; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -336,7 +336,7 @@ describe('Auction', function() {
       }
     });
 
-    it('should have the same DB state', async () => {
+    it("should have the same DB state", async () => {
       const ns = await chain.db.getNameStateByName(NAME1);
       assert(ns);
 
@@ -344,7 +344,7 @@ describe('Auction', function() {
       assert.bufferEqual(chain.tip.treeRoot, snapshot.treeRoot);
     });
 
-    it('should mine 2 blocks', async () => {
+    it("should mine 2 blocks", async () => {
       for (let i = 0; i < 2; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -352,7 +352,7 @@ describe('Auction', function() {
       }
     });
 
-    it('should open auction', async () => {
+    it("should open auction", async () => {
       const mtx = await winner.createOpen(NAME2);
 
       const job = await cpu.createJob();
@@ -364,38 +364,38 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should have the same DB root', async () => {
-      assert((chain.height % network.names.treeInterval) !== 0);
+    it("should have the same DB root", async () => {
+      assert(chain.height % network.names.treeInterval !== 0);
       const root = chain.db.txn.rootHash();
       await chain.close();
       await chain.open();
       assert.bufferEqual(root, chain.db.txn.rootHash());
     });
 
-    it('should cleanup', async () => {
+    it("should cleanup", async () => {
       await miner.close();
       await chain.close();
     });
   });
 
-  describe('Claim', function() {
+  describe("Claim", function () {
     const node = createNode();
-    const {chain, miner, cpu} = node;
+    const { chain, miner, cpu } = node;
 
     const wallet = node.wallet();
     const recip = node.wallet();
 
-    it('should open chain and miner', async () => {
+    it("should open chain and miner", async () => {
       await chain.open();
       await miner.open();
     });
 
-    it('should add addrs to miner', async () => {
+    it("should add addrs to miner", async () => {
       miner.addresses.length = 0;
       miner.addAddress(wallet.getReceive());
     });
 
-    it('should mine 20 blocks', async () => {
+    it("should mine 20 blocks", async () => {
       for (let i = 0; i < 20; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -403,8 +403,8 @@ describe('Auction', function() {
       }
     });
 
-    it('should reject a fraudulent claim', async () => {
-      const claim = await wallet.fakeClaim('cloudflare');
+    it("should reject a fraudulent claim", async () => {
+      const claim = await wallet.fakeClaim("cloudflare");
 
       const job = await cpu.createJob();
       job.pushClaim(claim, network);
@@ -421,11 +421,11 @@ describe('Auction', function() {
       }
 
       assert(err);
-      assert.strictEqual(err.reason, 'mandatory-script-verify-flag-failed');
+      assert.strictEqual(err.reason, "mandatory-script-verify-flag-failed");
     });
 
-    it('should open a claim for cloudflare.com', async () => {
-      const claim = await wallet.fakeClaim('cloudflare');
+    it("should open a claim for cloudflare.com", async () => {
+      const claim = await wallet.fakeClaim("cloudflare");
 
       const job = await cpu.createJob();
       job.pushClaim(claim, network);
@@ -441,8 +441,8 @@ describe('Auction', function() {
       }
     });
 
-    it('should open a TLD claim for .fr', async () => {
-      const claim = await wallet.fakeClaim('fr');
+    it("should open a TLD claim for .fr", async () => {
+      const claim = await wallet.fakeClaim("fr");
 
       const job = await cpu.createJob();
       job.pushClaim(claim, network);
@@ -458,8 +458,8 @@ describe('Auction', function() {
       }
     });
 
-    it('should open a TLD claim for .nl', async () => {
-      const claim = await wallet.fakeClaim('nl');
+    it("should open a TLD claim for .nl", async () => {
+      const claim = await wallet.fakeClaim("nl");
 
       const job = await cpu.createJob();
       job.pushClaim(claim, network);
@@ -475,8 +475,8 @@ describe('Auction', function() {
       }
     });
 
-    it('should open a TLD claim for .af', async () => {
-      const claim = await wallet.fakeClaim('af');
+    it("should open a TLD claim for .af", async () => {
+      const claim = await wallet.fakeClaim("af");
 
       const job = await cpu.createJob();
       job.pushClaim(claim, network);
@@ -515,7 +515,7 @@ describe('Auction', function() {
     });
     */
 
-    it('should mine 20 blocks', async () => {
+    it("should mine 20 blocks", async () => {
       for (let i = 0; i < 20; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -523,8 +523,11 @@ describe('Auction', function() {
       }
     });
 
-    it('should register a claimed name', async () => {
-      const mtx = await wallet.createRegister('cloudflare', Buffer.from([1,2]));
+    it("should register a claimed name", async () => {
+      const mtx = await wallet.createRegister(
+        "cloudflare",
+        Buffer.from([1, 2])
+      );
 
       const job = await cpu.createJob();
       job.addTX(mtx.toTX(), mtx.view);
@@ -535,7 +538,7 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should mine 140 blocks', async () => {
+    it("should mine 140 blocks", async () => {
       for (let i = 0; i < 140; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -543,8 +546,8 @@ describe('Auction', function() {
       }
     });
 
-    it('should register a claimed name', async () => {
-      const mtx = await wallet.createRegister('af', Buffer.from([1,2,3]));
+    it("should register a claimed name", async () => {
+      const mtx = await wallet.createRegister("af", Buffer.from([1, 2, 3]));
 
       const job = await cpu.createJob();
       job.addTX(mtx.toTX(), mtx.view);
@@ -555,9 +558,9 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should transfer strong name', async () => {
+    it("should transfer strong name", async () => {
       const addr = recip.createReceive().getAddress();
-      const mtx = await wallet.createTransfer('af', addr);
+      const mtx = await wallet.createTransfer("af", addr);
 
       const job = await cpu.createJob();
       job.addTX(mtx.toTX(), mtx.view);
@@ -568,8 +571,8 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should not be able to finalize early', async () => {
-      const mtx = await wallet.createFinalize('af');
+    it("should not be able to finalize early", async () => {
+      const mtx = await wallet.createFinalize("af");
 
       const job = await cpu.createJob();
       job.addTX(mtx.toTX(), mtx.view);
@@ -586,10 +589,10 @@ describe('Auction', function() {
       }
 
       assert(err);
-      assert.strictEqual(err.reason, 'bad-finalize-maturity');
+      assert.strictEqual(err.reason, "bad-finalize-maturity");
     });
 
-    it('should mine 20 blocks', async () => {
+    it("should mine 20 blocks", async () => {
       for (let i = 0; i < 20; i++) {
         const block = await cpu.mineBlock();
         assert(block);
@@ -597,8 +600,8 @@ describe('Auction', function() {
       }
     });
 
-    it('should finalize name', async () => {
-      const mtx = await wallet.createFinalize('af');
+    it("should finalize name", async () => {
+      const mtx = await wallet.createFinalize("af");
 
       const job = await cpu.createJob();
       job.addTX(mtx.toTX(), mtx.view);
@@ -609,7 +612,7 @@ describe('Auction', function() {
       assert(await chain.add(block));
     });
 
-    it('should cleanup', async () => {
+    it("should cleanup", async () => {
       await miner.close();
       await chain.close();
     });

@@ -46,6 +46,7 @@
     "goosig": "~0.7.0",
     "hs-client": "~0.0.8",
     "n64": "~0.2.10",
+    "prettier": "^2.0.5",
     "urkel": "~0.6.3"
   },
   "devDependencies": {

@@ -2,10 +2,9 @@
 /* eslint prefer-arrow-callback: "off" */
 /* eslint no-unused-vars: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const KeyRing = require('../lib/primitives/keyring');
+const assert = require("bsert");
+const KeyRing = require("../lib/primitives/keyring");
 
-describe('KeyRing', function() {
-});
+describe("KeyRing", function () {});

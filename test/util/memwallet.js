@@ -4,33 +4,33 @@
  * https://github.com/handshake-org/hsd
  */
 
-'use strict';
+"use strict";
 
-const assert = require('assert');
-const bio = require('bufio');
-const blake2b = require('bcrypto/lib/blake2b');
-const {BufferMap, BufferSet} = require('buffer-map');
-const rules = require('../../lib/covenants/rules');
-const Network = require('../../lib/protocol/network');
-const MTX = require('../../lib/primitives/mtx');
-const HD = require('../../lib/hd/hd');
-const {BloomFilter} = require('bfilter');
-const KeyRing = require('../../lib/primitives/keyring');
-const Outpoint = require('../../lib/primitives/outpoint');
-const CoinView = require('../../lib/coins/coinview');
-const Output = require('../../lib/primitives/output');
-const Coin = require('../../lib/primitives/coin');
-const consensus = require('../../lib/protocol/consensus');
-const Claim = require('../../lib/primitives/claim');
-const NameState = require('../../lib/covenants/namestate');
-const NameUndo = require('../../lib/covenants/undo');
-const reserved = require('../../lib/covenants/reserved');
-const ownership = require('../../lib/covenants/ownership');
-const policy = require('../../lib/protocol/policy');
-const {Resource} = require('../../lib/dns/resource');
-const Address = require('../../lib/primitives/address');
-const {states} = NameState;
-const {types} = rules;
+const assert = require("assert");
+const bio = require("bufio");
+const blake2b = require("bcrypto/lib/blake2b");
+const { BufferMap, BufferSet } = require("buffer-map");
+const rules = require("../../lib/covenants/rules");
+const Network = require("../../lib/protocol/network");
+const MTX = require("../../lib/primitives/mtx");
+const HD = require("../../lib/hd/hd");
+const { BloomFilter } = require("bfilter");
+const KeyRing = require("../../lib/primitives/keyring");
+const Outpoint = require("../../lib/primitives/outpoint");
+const CoinView = require("../../lib/coins/coinview");
+const Output = require("../../lib/primitives/output");
+const Coin = require("../../lib/primitives/coin");
+const consensus = require("../../lib/protocol/consensus");
+const Claim = require("../../lib/primitives/claim");
+const NameState = require("../../lib/covenants/namestate");
+const NameUndo = require("../../lib/covenants/undo");
+const reserved = require("../../lib/covenants/reserved");
+const ownership = require("../../lib/covenants/ownership");
+const policy = require("../../lib/protocol/policy");
+const { Resource } = require("../../lib/dns/resource");
+const Address = require("../../lib/primitives/address");
+const { states } = NameState;
+const { types } = rules;
 
 const EMPTY = Buffer.alloc(0);
 
@@ -62,8 +62,7 @@ class MemWallet {
     this.txs = 0;
     this.filter = BloomFilter.fromRate(1000000, 0.001, -1);
 
-    if (options)
-      this.fromOptions(options);
+    if (options) this.fromOptions(options);
 
     this.init();
   }
@@ -85,22 +84,22 @@ class MemWallet {
     }
 
     if (options.witness != null) {
-      assert(typeof options.witness === 'boolean');
+      assert(typeof options.witness === "boolean");
       this.witness = options.witness;
     }
 
     if (options.account != null) {
-      assert(typeof options.account === 'number');
+      assert(typeof options.account === "number");
       this.account = options.account;
     }
 
     if (options.receiveDepth != null) {
-      assert(typeof options.receiveDepth === 'number');
+      assert(typeof options.receiveDepth === "number");
       this.receiveDepth = options.receiveDepth;
     }
 
     if (options.changeDepth != null) {
-      assert(typeof options.changeDepth === 'number');
+      assert(typeof options.changeDepth === "number");
       this.changeDepth = options.changeDepth;
     }
 
@@ -112,8 +111,7 @@ class MemWallet {
 
     this.chain = [this.network.genesis.hash];
 
-    if (!this.master)
-      this.master = HD.PrivateKey.generate();
+    if (!this.master) this.master = HD.PrivateKey.generate();
 
     if (!this.key) {
       const type = this.network.keyPrefix.coinType;
@@ -121,12 +119,10 @@ class MemWallet {
     }
 
     i = this.receiveDepth;
-    while (i--)
-      this.createReceive();
+    while (i--) this.createReceive();
 
     i = this.changeDepth;
-    while (i--)
-      this.createChange();
+    while (i--) this.createChange();
   }
 
   createReceive() {
@@ -170,7 +166,7 @@ class MemWallet {
 
     const ring = new KeyRing({
       network: this.network,
-      privateKey: key.privateKey
+      privateKey: key.privateKey,
     });
 
     return ring;
@@ -179,8 +175,7 @@ class MemWallet {
   getKey(hash) {
     const path = this.paths.get(hash);
 
-    if (!path)
-      return null;
+    if (!path) return null;
 
     return this.derivePath(path);
   }
@@ -212,8 +207,7 @@ class MemWallet {
   removeCoin(key) {
     const coin = this.coins.get(key);
 
-    if (!coin)
-      return;
+    if (!coin) return;
 
     this.spent.set(key, coin);
     this.balance -= coin.value;
@@ -236,8 +230,7 @@ class MemWallet {
   getCoins() {
     const coins = [];
 
-    for (const coin of this.coins.values())
-      coins.push(coin);
+    for (const coin of this.coins.values()) coins.push(coin);
 
     return coins;
   }
@@ -245,12 +238,10 @@ class MemWallet {
   syncKey(path) {
     switch (path.branch) {
       case 0:
-        if (path.index === this.receiveDepth - 1)
-          this.createReceive();
+        if (path.index === this.receiveDepth - 1) this.createReceive();
         break;
       case 1:
-        if (path.index === this.changeDepth - 1)
-          this.createChange();
+        if (path.index === this.changeDepth - 1) this.createChange();
         break;
       default:
         assert(false);
@@ -281,11 +272,9 @@ class MemWallet {
 
     let result = false;
 
-    if (height == null)
-      height = -1;
+    if (height == null) height = -1;
 
-    if (this.map.has(hash))
-      return true;
+    if (this.map.has(hash)) return true;
 
     const view = new CoinView();
 
@@ -294,8 +283,7 @@ class MemWallet {
       const op = input.prevout.toKey();
       const coin = this.getCoin(op);
 
-      if (!coin)
-        continue;
+      if (!coin) continue;
 
       result = true;
 
@@ -308,13 +296,11 @@ class MemWallet {
       const output = tx.outputs[i];
       const addr = output.getHash();
 
-      if (!addr)
-        continue;
+      if (!addr) continue;
 
       const path = this.getPath(addr);
 
-      if (!path)
-        continue;
+      if (!path) continue;
 
       result = true;
 
@@ -324,8 +310,7 @@ class MemWallet {
       this.syncKey(path);
     }
 
-    if (height !== -1)
-      this.connectNames(tx, view, height);
+    if (height !== -1) this.connectNames(tx, view, height);
 
     if (result) {
       this.txs += 1;
@@ -345,28 +330,24 @@ class MemWallet {
 
     for (let i = 0; i < tx.outputs.length; i++) {
       const output = tx.outputs[i];
-      const {covenant} = output;
+      const { covenant } = output;
 
-      if (!covenant.isName())
-        continue;
+      if (!covenant.isName()) continue;
 
       const addr = output.getHash();
 
-      if (!addr)
-        continue;
+      if (!addr) continue;
 
       const path = this.getPath(addr);
       const nameHash = covenant.getHash(0);
       const outpoint = tx.outpoint(i);
       const ns = view.getNameStateSync(this, nameHash);
 
-      if (!ns.isNull())
-        ns.maybeExpire(height, network);
+      if (!ns.isNull()) ns.maybeExpire(height, network);
 
       switch (covenant.type) {
         case types.CLAIM: {
-          if (!path)
-            break;
+          if (!path) break;
 
           const name = covenant.get(2);
           const flags = covenant.getU8(3);
@@ -375,8 +356,7 @@ class MemWallet {
           // if (ns.isNull())
           //   this.addNameMap(b, nameHash);
 
-          if (ns.isNull())
-            ns.set(name, height);
+          if (ns.isNull()) ns.set(name, height);
 
           ns.setHeight(height);
           ns.setRenewal(height);
@@ -392,8 +372,7 @@ class MemWallet {
         }
 
         case types.OPEN: {
-          if (!path)
-            break;
+          if (!path) break;
 
           if (ns.isNull()) {
             const name = covenant.get(2);
@@ -415,14 +394,13 @@ class MemWallet {
           const lockup = output.value;
 
           if (!path) {
-            if (ns.isNull())
-              break;
+            if (ns.isNull()) break;
 
             this.putBid(nameHash, outpoint, {
               name,
               lockup,
               blind,
-              own: false
+              own: false,
             });
 
             updated = true;
@@ -439,7 +417,7 @@ class MemWallet {
             name,
             lockup,
             blind,
-            own: true
+            own: true,
           });
 
           updated = true;
@@ -448,8 +426,7 @@ class MemWallet {
         }
 
         case types.REVEAL: {
-          if (ns.isNull())
-            break;
+          if (ns.isNull()) break;
 
           if (ns.owner.isNull() || output.value > ns.highest) {
             ns.setValue(ns.highest);
@@ -464,7 +441,7 @@ class MemWallet {
               name: ns.name,
               value: output.value,
               height: height,
-              own: false
+              own: false,
             });
             updated = true;
             break;
@@ -478,7 +455,7 @@ class MemWallet {
 
             this.putBlind(blind, {
               value: output.value,
-              nonce: nonce
+              nonce: nonce,
             });
           }
 
@@ -486,7 +463,7 @@ class MemWallet {
             name: ns.name,
             value: output.value,
             height: height,
-            own: true
+            own: true,
           });
 
           updated = true;
@@ -499,16 +476,14 @@ class MemWallet {
         }
 
         case types.REGISTER: {
-          if (ns.isNull())
-            break;
+          if (ns.isNull()) break;
 
           const data = covenant.get(2);
 
           ns.setRegistered(true);
           ns.setOwner(outpoint);
 
-          if (data.length > 0)
-            ns.setData(data);
+          if (data.length > 0) ns.setData(data);
 
           ns.setRenewal(height);
 
@@ -518,15 +493,13 @@ class MemWallet {
         }
 
         case types.UPDATE: {
-          if (ns.isNull())
-            break;
+          if (ns.isNull()) break;
 
           const data = covenant.get(2);
 
           ns.setOwner(outpoint);
 
-          if (data.length > 0)
-            ns.setData(data);
+          if (data.length > 0) ns.setData(data);
 
           ns.setTransfer(0);
 
@@ -536,8 +509,7 @@ class MemWallet {
         }
 
         case types.RENEW: {
-          if (ns.isNull())
-            break;
+          if (ns.isNull()) break;
 
           ns.setOwner(outpoint);
           ns.setTransfer(0);
@@ -550,8 +522,7 @@ class MemWallet {
         }
 
         case types.TRANSFER: {
-          if (ns.isNull())
-            break;
+          if (ns.isNull()) break;
 
           ns.setOwner(outpoint);
 
@@ -565,8 +536,7 @@ class MemWallet {
 
         case types.FINALIZE: {
           if (ns.isNull()) {
-            if (!path)
-              break;
+            if (!path) break;
 
             const start = covenant.getU32(1);
             const name = covenant.get(2);
@@ -599,8 +569,7 @@ class MemWallet {
         }
 
         case types.REVOKE: {
-          if (ns.isNull())
-            break;
+          if (ns.isNull()) break;
 
           assert(ns.revoked === 0);
           ns.setRevoked(height);
@@ -614,19 +583,16 @@ class MemWallet {
     }
 
     for (const ns of view.names.values()) {
-      const {nameHash} = ns;
+      const { nameHash } = ns;
 
-      if (ns.isNull())
-        this.removeNameState(nameHash);
-      else
-        this.putNameState(nameHash, ns);
+      if (ns.isNull()) this.removeNameState(nameHash);
+      else this.putNameState(nameHash, ns);
     }
 
     if (updated) {
       const undo = view.toNameUndo();
 
-      if (undo.names.length > 0)
-        this.putNameUndo(hash, undo);
+      if (undo.names.length > 0) this.putNameUndo(hash, undo);
     }
 
     return updated;
@@ -637,15 +603,13 @@ class MemWallet {
 
     let result = false;
 
-    if (!this.map.has(hash))
-      return false;
+    if (!this.map.has(hash)) return false;
 
     for (let i = 0; i < tx.outputs.length; i++) {
       const op = new Outpoint(hash, i).toKey();
       const coin = this.getCoin(op);
 
-      if (!coin)
-        continue;
+      if (!coin) continue;
 
       result = true;
 
@@ -657,8 +621,7 @@ class MemWallet {
       const op = input.prevout.toKey();
       const coin = this.getUndo(op);
 
-      if (!coin)
-        continue;
+      if (!coin) continue;
 
       result = true;
 
@@ -667,8 +630,7 @@ class MemWallet {
 
     this.undoNameState(tx);
 
-    if (result)
-      this.txs -= 1;
+    if (result) this.txs -= 1;
 
     this.map.delete(hash);
 
@@ -680,10 +642,9 @@ class MemWallet {
 
     for (let i = 0; i < tx.outputs.length; i++) {
       const output = tx.outputs[i];
-      const {covenant} = output;
+      const { covenant } = output;
 
-      if (!covenant.isName())
-        continue;
+      if (!covenant.isName()) continue;
 
       switch (covenant.type) {
         case types.BID: {
@@ -701,8 +662,7 @@ class MemWallet {
 
     const undo = this.getNameUndo(hash);
 
-    if (!undo)
-      return;
+    if (!undo) return;
 
     const view = new CoinView();
 
@@ -711,10 +671,8 @@ class MemWallet {
 
       ns.applyState(delta);
 
-      if (ns.isNull())
-        this.removeNameState(nameHash);
-      else
-        this.putNameState(nameHash, ns);
+      if (ns.isNull()) this.removeNameState(nameHash);
+      else this.putNameState(nameHash, ns);
     }
 
     this.removeNameUndo(hash);
@@ -727,18 +685,15 @@ class MemWallet {
       const input = mtx.inputs[i];
       const coin = mtx.view.getOutputFor(input);
 
-      if (!coin)
-        continue;
+      if (!coin) continue;
 
       const addr = coin.getHash();
 
-      if (!addr)
-        continue;
+      if (!addr) continue;
 
       const path = this.getPath(addr);
 
-      if (!path)
-        continue;
+      if (!path) continue;
 
       const key = this.derivePath(path);
 
@@ -751,14 +706,13 @@ class MemWallet {
   generateNonce(nameHash, address, value) {
     const path = this.getPath(address.hash);
 
-    if (!path)
-      throw new Error('Account not found.');
+    if (!path) throw new Error("Account not found.");
 
     const hi = (value * (1 / 0x100000000)) >>> 0;
     const lo = value >>> 0;
     const index = (hi ^ lo) & 0x7fffffff;
 
-    const {publicKey} = this.master.derive(index);
+    const { publicKey } = this.master.derive(index);
 
     return blake2b.multi(address.hash, publicKey, nameHash);
   }
@@ -767,7 +721,7 @@ class MemWallet {
     const nonce = this.generateNonce(nameHash, address, value);
     const blind = rules.blind(value, nonce);
 
-    this.putBlind(blind, {value, nonce});
+    this.putBlind(blind, { value, nonce });
 
     return blind;
   }
@@ -782,55 +736,48 @@ class MemWallet {
   }
 
   async buildClaim(name, options) {
-    if (options == null)
-      options = {};
+    if (options == null) options = {};
 
-    assert(typeof name === 'string');
-    assert(options && typeof options === 'object');
+    assert(typeof name === "string");
+    assert(options && typeof options === "object");
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const height = this.height + 1;
     const network = this.network;
 
     // TODO: Handle expired behavior.
     if (!rules.isReserved(nameHash, height, network))
-      throw new Error('Name is not reserved.');
+      throw new Error("Name is not reserved.");
 
     const ns = await this.getNameState(nameHash);
 
     if (ns) {
       if (!ns.isExpired(height, network))
-        throw new Error('Name already claimed.');
+        throw new Error("Name already claimed.");
     } else {
-      if (!await this.isAvailable(nameHash))
-        throw new Error('Name is not available.');
+      if (!(await this.isAvailable(nameHash)))
+        throw new Error("Name is not available.");
     }
 
     const item = reserved.get(nameHash);
     assert(item);
 
     let rate = options.rate;
-    if (rate == null)
-      rate = 1000;
+    if (rate == null) rate = 1000;
 
     let size = 5 << 10;
     let proof = null;
 
     try {
       proof = await ownership.prove(item.target, true);
-    } catch (e) {
-      ;
-    }
+    } catch (e) {}
 
     if (proof) {
       const zones = proof.zones;
-      const zone = zones.length >= 2
-        ? zones[zones.length - 1]
-        : null;
+      const zone = zones.length >= 2 ? zones[zones.length - 1] : null;
 
       let added = 0;
 
@@ -854,11 +801,10 @@ class MemWallet {
 
     let minFee = options.fee;
 
-    if (minFee == null)
-      minFee = policy.getMinFee(size, rate);
+    if (minFee == null) minFee = policy.getMinFee(size, rate);
 
     if (this.chain.length < 2)
-      throw new Error('Chain too immature for name claim.');
+      throw new Error("Chain too immature for name claim.");
 
     let commitHash = this.chain[1];
     let commitHeight = 1;
@@ -866,8 +812,7 @@ class MemWallet {
     if (options.commitHeight != null) {
       const block = this.chain[options.commitHeight];
 
-      if (!block)
-        throw new Error('Block not found.');
+      if (!block) throw new Error("Block not found.");
 
       commitHeight = options.commitHeight;
       commitHash = block;
@@ -875,11 +820,13 @@ class MemWallet {
 
     const fee = Math.min(item.value, minFee);
     const address = this.createReceive().getAddress();
-    const txt = ownership.createData(address,
-                                     fee,
-                                     commitHash,
-                                     commitHeight,
-                                     network);
+    const txt = ownership.createData(
+      address,
+      fee,
+      commitHash,
+      commitHeight,
+      network
+    );
 
     return {
       name,
@@ -889,79 +836,73 @@ class MemWallet {
       size,
       fee,
       address,
-      txt
+      txt,
     };
   }
 
   async fakeClaim(name, options) {
-    if (options == null)
-      options = {};
+    if (options == null) options = {};
 
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const height = this.height + 1;
     const network = this.network;
 
     // TODO: Handle expired behavior.
     if (!rules.isReserved(nameHash, height, network))
-      throw new Error('Name is not reserved.');
+      throw new Error("Name is not reserved.");
 
     const ns = this.getNameState(nameHash);
 
     if (ns) {
       if (!ns.isExpired(height, network))
-        throw new Error('Name already claimed.');
+        throw new Error("Name already claimed.");
     } else {
-      if (!await this.isAvailable(nameHash))
-        throw new Error('Name is not available.');
+      if (!(await this.isAvailable(nameHash)))
+        throw new Error("Name is not available.");
     }
 
-    const {proof, txt} = await this.buildClaim(name, options);
+    const { proof, txt } = await this.buildClaim(name, options);
 
-    if (!proof)
-      throw new Error('Could not resolve name.');
+    if (!proof) throw new Error("Could not resolve name.");
 
     proof.addData([txt]);
 
     const data = proof.getData(this.network);
 
-    if (!data)
-      throw new Error(`No valid DNS commitment found for ${name}.`);
+    if (!data) throw new Error(`No valid DNS commitment found for ${name}.`);
 
     return Claim.fromProof(proof);
   }
 
   async createClaim(name, options) {
-    if (options == null)
-      options = {};
+    if (options == null) options = {};
 
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const height = this.height + 1;
     const network = this.network;
 
     // TODO: Handle expired behavior.
     if (!rules.isReserved(nameHash, height, network))
-      throw new Error('Name is not reserved.');
+      throw new Error("Name is not reserved.");
 
     const ns = this.getNameState(nameHash);
 
     if (ns) {
       if (!ns.isExpired(height, network))
-        throw new Error('Name already claimed.');
+        throw new Error("Name already claimed.");
     } else {
-      if (!await this.isAvailable(nameHash))
-        throw new Error('Name is not available.');
+      if (!(await this.isAvailable(nameHash)))
+        throw new Error("Name is not available.");
     }
 
     const item = reserved.get(nameHash);
@@ -970,45 +911,41 @@ class MemWallet {
     const proof = await ownership.prove(item.target);
     const data = proof.getData(this.network);
 
-    if (!data)
-      throw new Error(`No valid DNS commitment found for ${name}.`);
+    if (!data) throw new Error(`No valid DNS commitment found for ${name}.`);
 
     return Claim.fromProof(proof);
   }
 
   async createOpen(name, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const height = this.height + 1;
     const network = this.network;
 
     // TODO: Handle expired behavior.
     if (rules.isReserved(nameHash, height, network))
-      throw new Error('Name is reserved.');
+      throw new Error("Name is reserved.");
 
     if (!rules.hasRollout(nameHash, height, network))
-      throw new Error('Name not yet available.');
+      throw new Error("Name not yet available.");
 
     let ns = this.getNameState(nameHash);
 
-    if (!ns)
-      ns = await this.getNameStatus(nameHash);
+    if (!ns) ns = await this.getNameStatus(nameHash);
 
     ns.maybeExpire(height, network);
 
     const state = ns.state(height, network);
     const start = ns.height;
 
-    if (state !== states.OPENING)
-      throw new Error('Name is not available.');
+    if (state !== states.OPENING) throw new Error("Name is not available.");
 
     if (start !== 0 && start !== height)
-      throw new Error('Name is already opening.');
+      throw new Error("Name is already opening.");
 
     const addr = this.createReceive().getAddress();
 
@@ -1027,28 +964,26 @@ class MemWallet {
   }
 
   async createBid(name, value, lockup, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
     assert(Number.isSafeInteger(value) && value >= 0);
     assert(Number.isSafeInteger(lockup) && lockup >= 0);
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const height = this.height + 1;
     const network = this.network;
 
     if (rules.isReserved(nameHash, height, network))
-      throw new Error('Name is reserved.');
+      throw new Error("Name is reserved.");
 
     if (!rules.hasRollout(nameHash, height, network))
-      throw new Error('Name not yet available.');
+      throw new Error("Name not yet available.");
 
     let ns = this.getNameState(nameHash);
 
-    if (!ns)
-      ns = await this.getNameStatus(nameHash);
+    if (!ns) ns = await this.getNameStatus(nameHash);
 
     ns.maybeExpire(height, network);
 
@@ -1056,13 +991,11 @@ class MemWallet {
     const start = ns.height;
 
     if (state === states.OPENING)
-      throw new Error('Name has not reached the bidding phase yet.');
+      throw new Error("Name has not reached the bidding phase yet.");
 
-    if (state !== states.BIDDING)
-      throw new Error('Name is not available.');
+    if (state !== states.BIDDING) throw new Error("Name is not available.");
 
-    if (value > lockup)
-      throw new Error('Bid exceeds lockup value.');
+    if (value > lockup) throw new Error("Bid exceeds lockup value.");
 
     const addr = this.createReceive().getAddress();
     const blind = this.generateBlind(nameHash, addr, value);
@@ -1083,53 +1016,45 @@ class MemWallet {
   }
 
   async createReveal(name, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const ns = this.getNameState(nameHash);
     const height = this.height + 1;
     const network = this.network;
 
-    if (!ns)
-      throw new Error('Auction not found.');
+    if (!ns) throw new Error("Auction not found.");
 
     ns.maybeExpire(height, network);
 
     const state = ns.state(height, network);
 
-    if (state < states.REVEAL)
-      throw new Error('Cannot reveal yet.');
+    if (state < states.REVEAL) throw new Error("Cannot reveal yet.");
 
-    if (state > states.REVEAL)
-      throw new Error('Reveal period has passed.');
+    if (state > states.REVEAL) throw new Error("Reveal period has passed.");
 
     const bids = this.getBids(nameHash);
     const mtx = new MTX();
 
-    for (const {prevout, own} of bids) {
-      if (!own)
-        continue;
+    for (const { prevout, own } of bids) {
+      if (!own) continue;
 
       const coin = this.getCoin(prevout.toKey());
 
-      if (!coin)
-        continue;
+      if (!coin) continue;
 
       // Is local?
-      if (coin.height < ns.height)
-        continue;
+      if (coin.height < ns.height) continue;
 
       const blind = coin.covenant.getHash(3);
       const bv = this.getBlind(blind);
 
-      if (!bv)
-        throw new Error('Blind value not found.');
+      if (!bv) throw new Error("Blind value not found.");
 
-      const {value, nonce} = bv;
+      const { value, nonce } = bv;
 
       const output = new Output();
       output.address = coin.address;
@@ -1143,53 +1068,44 @@ class MemWallet {
       mtx.outputs.push(output);
     }
 
-    if (mtx.outputs.length === 0)
-      throw new Error('No bids to reveal.');
+    if (mtx.outputs.length === 0) throw new Error("No bids to reveal.");
 
     return this._create(mtx, options);
   }
 
   async createRedeem(name, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const ns = this.getNameState(nameHash);
     const height = this.height + 1;
     const network = this.network;
 
-    if (!ns)
-      throw new Error('Auction not found.');
+    if (!ns) throw new Error("Auction not found.");
 
-    if (ns.isExpired(height, network))
-      throw new Error('Name has expired!');
+    if (ns.isExpired(height, network)) throw new Error("Name has expired!");
 
     const state = ns.state(height, network);
 
-    if (state < states.CLOSED)
-      throw new Error('Auction is not yet closed.');
+    if (state < states.CLOSED) throw new Error("Auction is not yet closed.");
 
     const reveals = this.getReveals(nameHash);
     const mtx = new MTX();
 
-    for (const {prevout, own} of reveals) {
-      if (!own)
-        continue;
+    for (const { prevout, own } of reveals) {
+      if (!own) continue;
 
-      if (prevout.equals(ns.owner))
-        continue;
+      if (prevout.equals(ns.owner)) continue;
 
       const coin = this.getCoin(prevout.toKey());
 
-      if (!coin)
-        continue;
+      if (!coin) continue;
 
       // Is local?
-      if (coin.height < ns.height)
-        continue;
+      if (coin.height < ns.height) continue;
 
       mtx.addOutpoint(prevout);
 
@@ -1203,56 +1119,49 @@ class MemWallet {
       mtx.outputs.push(output);
     }
 
-    if (mtx.outputs.length === 0)
-      throw new Error('No reveals to redeem.');
+    if (mtx.outputs.length === 0) throw new Error("No reveals to redeem.");
 
     return this._create(mtx, options);
   }
 
   async createRegister(name, resource, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (resource instanceof Resource)
-      resource = resource.encode();
+    if (resource instanceof Resource) resource = resource.encode();
 
     assert(!resource || Buffer.isBuffer(resource));
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const ns = this.getNameState(nameHash);
     const height = this.height + 1;
     const network = this.network;
 
-    if (!ns)
-      throw new Error('Auction not found.');
+    if (!ns) throw new Error("Auction not found.");
 
     const coin = this.getCoin(ns.owner.toKey());
 
-    if (!coin)
-      throw new Error('Wallet did not win the auction.');
+    if (!coin) throw new Error("Wallet did not win the auction.");
 
-    if (ns.isExpired(height, network))
-      throw new Error('Name has expired!');
+    if (ns.isExpired(height, network)) throw new Error("Name has expired!");
 
     // Is local?
     if (coin.height < ns.height)
-      throw new Error('Wallet did not win the auction.');
+      throw new Error("Wallet did not win the auction.");
 
     if (!coin.covenant.isReveal() && !coin.covenant.isClaim())
-      throw new Error('Name must be in REVEAL or CLAIM state.');
+      throw new Error("Name must be in REVEAL or CLAIM state.");
 
     if (coin.covenant.isClaim()) {
       if (height < coin.height + network.coinbaseMaturity)
-        throw new Error('Claim is not yet mature.');
+        throw new Error("Claim is not yet mature.");
     }
 
     const state = ns.state(height, network);
 
-    if (state !== states.CLOSED)
-      throw new Error('Auction is not yet closed.');
+    if (state !== states.CLOSED) throw new Error("Auction is not yet closed.");
 
     const output = new Output();
     output.address = coin.address;
@@ -1262,10 +1171,8 @@ class MemWallet {
     output.covenant.pushHash(nameHash);
     output.covenant.pushU32(ns.height);
 
-    if (resource)
-      output.covenant.push(resource);
-    else
-      output.covenant.push(EMPTY);
+    if (resource) output.covenant.push(resource);
+    else output.covenant.push(EMPTY);
 
     output.covenant.pushHash(this.getRenewalBlock());
 
@@ -1277,35 +1184,30 @@ class MemWallet {
   }
 
   async createUpdate(name, resource, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (resource instanceof Resource)
-      resource = resource.encode();
+    if (resource instanceof Resource) resource = resource.encode();
 
     assert(Buffer.isBuffer(resource));
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const ns = this.getNameState(nameHash);
     const height = this.height + 1;
     const network = this.network;
 
-    if (!ns)
-      throw new Error('Auction not found.');
+    if (!ns) throw new Error("Auction not found.");
 
     const coin = this.getCoin(ns.owner.toKey());
 
-    if (!coin)
-      throw new Error(`Wallet does not own: "${name}".`);
+    if (!coin) throw new Error(`Wallet does not own: "${name}".`);
 
     if (coin.covenant.isReveal() || coin.covenant.isClaim())
       return this.createRegister(name, resource, options);
 
-    if (ns.isExpired(height, network))
-      throw new Error('Name has expired!');
+    if (ns.isExpired(height, network)) throw new Error("Name has expired!");
 
     // Is local?
     if (coin.height < ns.height)
@@ -1313,14 +1215,15 @@ class MemWallet {
 
     const state = ns.state(height, network);
 
-    if (state !== states.CLOSED)
-      throw new Error('Auction is not yet closed.');
+    if (state !== states.CLOSED) throw new Error("Auction is not yet closed.");
 
-    if (!coin.covenant.isRegister()
-        && !coin.covenant.isUpdate()
-        && !coin.covenant.isRenew()
-        && !coin.covenant.isFinalize()) {
-      throw new Error('Name must be registered.');
+    if (
+      !coin.covenant.isRegister() &&
+      !coin.covenant.isUpdate() &&
+      !coin.covenant.isRenew() &&
+      !coin.covenant.isFinalize()
+    ) {
+      throw new Error("Name must be registered.");
     }
 
     const output = new Output();
@@ -1339,27 +1242,23 @@ class MemWallet {
   }
 
   async createRenewal(name, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const ns = this.getNameState(nameHash);
     const height = this.height + 1;
     const network = this.network;
 
-    if (!ns)
-      throw new Error('Auction not found.');
+    if (!ns) throw new Error("Auction not found.");
 
     const coin = this.getCoin(ns.owner.toKey());
 
-    if (!coin)
-      throw new Error(`Wallet does not own: "${name}".`);
+    if (!coin) throw new Error(`Wallet does not own: "${name}".`);
 
-    if (ns.isExpired(height, network))
-      throw new Error('Name has expired!');
+    if (ns.isExpired(height, network)) throw new Error("Name has expired!");
 
     // Is local?
     if (coin.height < ns.height)
@@ -1367,14 +1266,15 @@ class MemWallet {
 
     const state = ns.state(height, network);
 
-    if (state !== states.CLOSED)
-      throw new Error('Auction is not yet closed.');
+    if (state !== states.CLOSED) throw new Error("Auction is not yet closed.");
 
-    if (!coin.covenant.isRegister()
-        && !coin.covenant.isUpdate()
-        && !coin.covenant.isRenew()
-        && !coin.covenant.isFinalize()) {
-      throw new Error('Name must be registered.');
+    if (
+      !coin.covenant.isRegister() &&
+      !coin.covenant.isUpdate() &&
+      !coin.covenant.isRenew() &&
+      !coin.covenant.isFinalize()
+    ) {
+      throw new Error("Name must be registered.");
     }
 
     // if (height < ns.renewal + network.names.treeInterval)
@@ -1396,28 +1296,24 @@ class MemWallet {
   }
 
   async createTransfer(name, address, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
     assert(address instanceof Address);
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const ns = this.getNameState(nameHash);
     const height = this.height + 1;
     const network = this.network;
 
-    if (!ns)
-      throw new Error('Auction not found.');
+    if (!ns) throw new Error("Auction not found.");
 
     const coin = this.getCoin(ns.owner.toKey());
 
-    if (!coin)
-      throw new Error(`Wallet does not own: "${name}".`);
+    if (!coin) throw new Error(`Wallet does not own: "${name}".`);
 
-    if (ns.isExpired(height, network))
-      throw new Error('Name has expired!');
+    if (ns.isExpired(height, network)) throw new Error("Name has expired!");
 
     // Is local?
     if (coin.height < ns.height)
@@ -1425,14 +1321,15 @@ class MemWallet {
 
     const state = ns.state(height, network);
 
-    if (state !== states.CLOSED)
-      throw new Error('Auction is not yet closed.');
+    if (state !== states.CLOSED) throw new Error("Auction is not yet closed.");
 
-    if (!coin.covenant.isRegister()
-        && !coin.covenant.isUpdate()
-        && !coin.covenant.isRenew()
-        && !coin.covenant.isFinalize()) {
-      throw new Error('Name must be registered.');
+    if (
+      !coin.covenant.isRegister() &&
+      !coin.covenant.isUpdate() &&
+      !coin.covenant.isRenew() &&
+      !coin.covenant.isFinalize()
+    ) {
+      throw new Error("Name must be registered.");
     }
 
     const output = new Output();
@@ -1452,32 +1349,27 @@ class MemWallet {
   }
 
   async createCancel(name, resource, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (resource instanceof Resource)
-      resource = resource.encode();
+    if (resource instanceof Resource) resource = resource.encode();
 
     assert(!resource || Buffer.isBuffer(resource));
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const ns = this.getNameState(nameHash);
     const height = this.height + 1;
     const network = this.network;
 
-    if (!ns)
-      throw new Error('Auction not found.');
+    if (!ns) throw new Error("Auction not found.");
 
     const coin = this.getCoin(ns.owner.toKey());
 
-    if (!coin)
-      throw new Error(`Wallet does not own: "${name}".`);
+    if (!coin) throw new Error(`Wallet does not own: "${name}".`);
 
-    if (ns.isExpired(height, network))
-      throw new Error('Name has expired!');
+    if (ns.isExpired(height, network)) throw new Error("Name has expired!");
 
     // Is local?
     if (coin.height < ns.height)
@@ -1485,11 +1377,10 @@ class MemWallet {
 
     const state = ns.state(height, network);
 
-    if (state !== states.CLOSED)
-      throw new Error('Auction is not yet closed.');
+    if (state !== states.CLOSED) throw new Error("Auction is not yet closed.");
 
     if (!coin.covenant.isTransfer())
-      throw new Error('Name is not being transfered.');
+      throw new Error("Name is not being transfered.");
 
     const output = new Output();
     output.address = coin.address;
@@ -1507,27 +1398,23 @@ class MemWallet {
   }
 
   async createFinalize(name, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const ns = this.getNameState(nameHash);
     const height = this.height + 1;
     const network = this.network;
 
-    if (!ns)
-      throw new Error('Auction not found.');
+    if (!ns) throw new Error("Auction not found.");
 
     const coin = this.getCoin(ns.owner.toKey());
 
-    if (!coin)
-      throw new Error(`Wallet does not own: "${name}".`);
+    if (!coin) throw new Error(`Wallet does not own: "${name}".`);
 
-    if (ns.isExpired(height, network))
-      throw new Error('Name has expired!');
+    if (ns.isExpired(height, network)) throw new Error("Name has expired!");
 
     // Is local?
     if (coin.height < ns.height)
@@ -1535,11 +1422,10 @@ class MemWallet {
 
     const state = ns.state(height, network);
 
-    if (state !== states.CLOSED)
-      throw new Error('Auction is not yet closed.');
+    if (state !== states.CLOSED) throw new Error("Auction is not yet closed.");
 
     if (!coin.covenant.isTransfer())
-      throw new Error('Name is not being transfered.');
+      throw new Error("Name is not being transfered.");
 
     // if (height < coin.height + network.names.transferLockup)
     //   throw new Error('Transfer is still locked up.');
@@ -1550,8 +1436,7 @@ class MemWallet {
 
     let flags = 0;
 
-    if (ns.weak)
-      flags |= 1;
+    if (ns.weak) flags |= 1;
 
     const output = new Output();
     output.address = address;
@@ -1573,42 +1458,39 @@ class MemWallet {
   }
 
   async createRevoke(name, options) {
-    assert(typeof name === 'string');
+    assert(typeof name === "string");
 
-    if (!rules.verifyName(name))
-      throw new Error('Invalid name.');
+    if (!rules.verifyName(name)) throw new Error("Invalid name.");
 
-    const rawName = Buffer.from(name, 'ascii');
+    const rawName = Buffer.from(name, "ascii");
     const nameHash = rules.hashName(rawName);
     const ns = this.getNameState(nameHash);
     const height = this.height + 1;
     const network = this.network;
 
-    if (!ns)
-      throw new Error('Auction not found.');
+    if (!ns) throw new Error("Auction not found.");
 
     const coin = this.getCoin(ns.owner.toKey());
 
-    if (!coin)
-      throw new Error(`Wallet does not own: "${name}".`);
+    if (!coin) throw new Error(`Wallet does not own: "${name}".`);
 
     // Is local?
     if (coin.height < ns.height)
       throw new Error(`Wallet does not own: "${name}".`);
 
-    if (ns.isExpired(height, network))
-      throw new Error('Name has expired!');
+    if (ns.isExpired(height, network)) throw new Error("Name has expired!");
 
     const state = ns.state(height, network);
 
-    if (state !== states.CLOSED)
-      throw new Error('Auction is not yet closed.');
+    if (state !== states.CLOSED) throw new Error("Auction is not yet closed.");
 
-    if (!coin.covenant.isRegister()
-        && !coin.covenant.isUpdate()
-        && !coin.covenant.isTransfer()
-        && !coin.covenant.isFinalize()) {
-      throw new Error('Name must be registered.');
+    if (
+      !coin.covenant.isRegister() &&
+      !coin.covenant.isUpdate() &&
+      !coin.covenant.isTransfer() &&
+      !coin.covenant.isFinalize()
+    ) {
+      throw new Error("Name must be registered.");
     }
 
     const output = new Output();
@@ -1628,8 +1510,7 @@ class MemWallet {
   getRenewalBlock() {
     let height = this.chain.length - this.network.names.renewalMaturity * 2;
 
-    if (height < 0)
-      height = 0;
+    if (height < 0) height = 0;
 
     return this.chain[height];
   }
@@ -1637,11 +1518,10 @@ class MemWallet {
   fund(mtx, options) {
     const coins = this.getCoins();
 
-    if (!options)
-      options = {};
+    if (!options) options = {};
 
     return mtx.fund(coins, {
-      selection: options.selection || 'age',
+      selection: options.selection || "age",
       round: options.round,
       depth: options.depth,
       hardFee: options.hardFee,
@@ -1650,7 +1530,7 @@ class MemWallet {
       coinbaseMaturity: this.network.coinbaseMaturity,
       height: -1,
       rate: options.rate,
-      maxFee: options.maxFee
+      maxFee: options.maxFee,
     });
   }
 
@@ -1668,17 +1548,15 @@ class MemWallet {
   async _create(mtx, options) {
     await this.fund(mtx, options);
 
-    assert(mtx.getFee() <= MTX.Selector.MAX_FEE, 'TX exceeds MAX_FEE.');
+    assert(mtx.getFee() <= MTX.Selector.MAX_FEE, "TX exceeds MAX_FEE.");
 
     mtx.sortMembers();
 
-    if (options && options.locktime != null)
-      mtx.setLocktime(options.locktime);
+    if (options && options.locktime != null) mtx.setLocktime(options.locktime);
 
     this.sign(mtx);
 
-    if (!mtx.isSigned())
-      throw new Error('Cannot sign tx.');
+    if (!mtx.isSigned()) throw new Error("Cannot sign tx.");
 
     return mtx;
   }
@@ -1703,8 +1581,7 @@ class MemWallet {
     assert(Buffer.isBuffer(nameHash));
     const raw = this.names.get(nameHash);
 
-    if (!raw)
-      return null;
+    if (!raw) return null;
 
     const ns = NameState.decode(raw);
     ns.nameHash = nameHash;
@@ -1723,8 +1600,7 @@ class MemWallet {
   getNameUndo(hash) {
     const raw = this.nameUndo.get(hash);
 
-    if (!raw)
-      return null;
+    if (!raw) return null;
 
     return NameUndo.decode(raw);
   }
@@ -1738,13 +1614,11 @@ class MemWallet {
 
     const map = this.bids.get(nameHash);
 
-    if (!map)
-      return null;
+    if (!map) return null;
 
     const raw = map.get(outpoint.toKey());
 
-    if (!raw)
-      return null;
+    if (!raw) return null;
 
     const bb = BlindBid.decode(raw);
     bb.nameHash = nameHash;
@@ -1756,8 +1630,7 @@ class MemWallet {
   putBid(nameHash, outpoint, options) {
     assert(Buffer.isBuffer(nameHash));
 
-    if (!this.bids.has(nameHash))
-      this.bids.set(nameHash, new BufferMap());
+    if (!this.bids.has(nameHash)) this.bids.set(nameHash, new BufferMap());
 
     const map = this.bids.get(nameHash);
 
@@ -1777,13 +1650,11 @@ class MemWallet {
 
     const map = this.bids.get(nameHash);
 
-    if (!map)
-      return;
+    if (!map) return;
 
     map.delete(outpoint.toKey());
 
-    if (map.size === 0)
-      this.bids.delete(nameHash);
+    if (map.size === 0) this.bids.delete(nameHash);
   }
 
   getBids(nameHash) {
@@ -1792,8 +1663,7 @@ class MemWallet {
 
       const map = this.bids.get(nameHash);
 
-      if (!map)
-        return [];
+      if (!map) return [];
 
       const bids = [];
 
@@ -1805,8 +1675,7 @@ class MemWallet {
 
         const bv = this.getBlind(bb.blind);
 
-        if (bv)
-          bb.value = bv.value;
+        if (bv) bb.value = bv.value;
 
         bids.push(bb);
       }
@@ -1825,8 +1694,7 @@ class MemWallet {
 
         const bv = this.getBlind(bb.blind);
 
-        if (bv)
-          bb.value = bv.value;
+        if (bv) bb.value = bv.value;
 
         bids.push(bb);
       }
@@ -1845,13 +1713,11 @@ class MemWallet {
 
     const map = this.reveals.get(nameHash);
 
-    if (!map)
-      return null;
+    if (!map) return null;
 
     const raw = map.get(outpoint.toKey());
 
-    if (!raw)
-      return null;
+    if (!raw) return null;
 
     const brv = BidReveal.decode(raw);
     brv.nameHash = nameHash;
@@ -1883,13 +1749,11 @@ class MemWallet {
 
     const map = this.reveals.get(nameHash);
 
-    if (!map)
-      return;
+    if (!map) return;
 
     map.delete(outpoint.toKey());
 
-    if (map.size === 0)
-      this.bids.delete(nameHash);
+    if (map.size === 0) this.bids.delete(nameHash);
   }
 
   getReveals(nameHash) {
@@ -1898,8 +1762,7 @@ class MemWallet {
 
       const map = this.reveals.get(nameHash);
 
-      if (!map)
-        return [];
+      if (!map) return [];
 
       const reveals = [];
 
@@ -1937,8 +1800,7 @@ class MemWallet {
     const key = blind;
     const raw = this.blinds.get(key);
 
-    if (!raw)
-      return null;
+    if (!raw) return null;
 
     return BlindValue.decode(raw);
   }
@@ -1946,7 +1808,7 @@ class MemWallet {
   putBlind(blind, options) {
     assert(Buffer.isBuffer(blind));
     const key = blind;
-    const {value, nonce} = options;
+    const { value, nonce } = options;
     const bv = new BlindValue();
     bv.value = value;
     bv.nonce = nonce;
@@ -2003,13 +1865,13 @@ class BlindBid extends bio.Struct {
 
   getJSON() {
     return {
-      name: this.name.toString('ascii'),
-      nameHash: this.nameHash.toString('hex'),
+      name: this.name.toString("ascii"),
+      nameHash: this.nameHash.toString("hex"),
       prevout: this.prevout.toJSON(),
       value: this.value === -1 ? undefined : this.value,
       lockup: this.lockup,
-      blind: this.blind.toString('hex'),
-      own: this.own
+      blind: this.blind.toString("hex"),
+      own: this.own,
     };
   }
 }
@@ -2040,7 +1902,7 @@ class BlindValue extends bio.Struct {
   getJSON() {
     return {
       value: this.value,
-      nonce: this.nonce.toString('hex')
+      nonce: this.nonce.toString("hex"),
     };
   }
 }
@@ -2063,8 +1925,7 @@ class BidReveal extends bio.Struct {
   write(bw) {
     let height = this.height;
 
-    if (height === -1)
-      height = 0xffffffff;
+    if (height === -1) height = 0xffffffff;
 
     bw.writeU8(this.name.length);
     bw.writeBytes(this.name);
@@ -2081,20 +1942,19 @@ class BidReveal extends bio.Struct {
     this.height = br.readU32();
     this.own = br.readU8() === 1;
 
-    if (this.height === 0xffffffff)
-      this.height = -1;
+    if (this.height === 0xffffffff) this.height = -1;
 
     return this;
   }
 
   getJSON() {
     return {
-      name: this.name.toString('ascii'),
-      nameHash: this.nameHash.toString('hex'),
+      name: this.name.toString("ascii"),
+      nameHash: this.nameHash.toString("hex"),
       prevout: this.prevout.toJSON(),
       value: this.value,
       height: this.height,
-      own: this.own
+      own: this.own,
     };
   }
 }

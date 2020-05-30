@@ -1,46 +1,46 @@
 /* eslint-env mocha */
 /* eslint prefer-arrow-callback: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const {resolve} = require('path');
-const fs = require('fs');
-const {BloomFilter} = require('bfilter');
-const {nonce} = require('../lib/net/common');
-const consensus = require('../lib/protocol/consensus');
-const Framer = require('../lib/net/framer');
-const packets = require('../lib/net/packets');
-const NetAddress = require('../lib/net/netaddress');
-const {CompactBlock, TXRequest, TXResponse} = require('../lib/net/bip152');
-const InvItem = require('../lib/primitives/invitem');
-const Headers = require('../lib/primitives/headers');
-const Block = require('../lib/primitives/block');
-const MemBlock = require('../lib/primitives/memblock');
-const MerkleBlock = require('../lib/primitives/merkleblock');
-const TX = require('../lib/primitives/tx');
-const Claim = require('../lib/primitives/claim');
-const Network = require('../lib/protocol/network');
-const genesis = require('../lib/protocol/genesis');
-const UrkelProof = require('urkel/radix').Proof;
-const blake2b = require('bcrypto/lib/blake2b');
-const AirdropProof = require('../lib/primitives/airdropproof');
+const assert = require("bsert");
+const { resolve } = require("path");
+const fs = require("fs");
+const { BloomFilter } = require("bfilter");
+const { nonce } = require("../lib/net/common");
+const consensus = require("../lib/protocol/consensus");
+const Framer = require("../lib/net/framer");
+const packets = require("../lib/net/packets");
+const NetAddress = require("../lib/net/netaddress");
+const { CompactBlock, TXRequest, TXResponse } = require("../lib/net/bip152");
+const InvItem = require("../lib/primitives/invitem");
+const Headers = require("../lib/primitives/headers");
+const Block = require("../lib/primitives/block");
+const MemBlock = require("../lib/primitives/memblock");
+const MerkleBlock = require("../lib/primitives/merkleblock");
+const TX = require("../lib/primitives/tx");
+const Claim = require("../lib/primitives/claim");
+const Network = require("../lib/protocol/network");
+const genesis = require("../lib/protocol/genesis");
+const UrkelProof = require("urkel/radix").Proof;
+const blake2b = require("bcrypto/lib/blake2b");
+const AirdropProof = require("../lib/primitives/airdropproof");
 
-const AIRDROP_PROOF_FILE = resolve(__dirname, 'data', 'airdrop-proof.base64');
-const read = file => Buffer.from(fs.readFileSync(file, 'binary'), 'base64');
+const AIRDROP_PROOF_FILE = resolve(__dirname, "data", "airdrop-proof.base64");
+const read = (file) => Buffer.from(fs.readFileSync(file, "binary"), "base64");
 
-describe('Net', function() {
-  describe('Packets', function() {
-    it('should encode/decode version packets', () => {
+describe("Net", function () {
+  describe("Packets", function () {
+    it("should encode/decode version packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.VERSION);
         assert.equal(pkt.version, 70012);
         assert.equal(pkt.services, 10);
         assert.equal(pkt.time, 1558405603);
-        assert.equal(pkt.remote.host, '127.0.0.1');
+        assert.equal(pkt.remote.host, "127.0.0.1");
         assert.equal(pkt.remote.port, 8334);
         assert.bufferEqual(pkt.nonce, Buffer.alloc(8, 0x00));
-        assert.equal(pkt.agent, 'hsd');
+        assert.equal(pkt.agent, "hsd");
         assert.equal(pkt.height, 500000);
         assert.equal(pkt.noRelay, true);
       };
@@ -50,17 +50,17 @@ describe('Net', function() {
         services: 10,
         time: 1558405603,
         remote: {
-          host: '127.0.0.1',
-          port: 8334
+          host: "127.0.0.1",
+          port: 8334,
         },
         local: {
-          host: '127.0.0.1',
-          port: 8335
+          host: "127.0.0.1",
+          port: 8335,
         },
         nonce: Buffer.alloc(8, 0x00),
-        agent: 'hsd',
+        agent: "hsd",
         height: 500000,
-        noRelay: true
+        noRelay: true,
       });
       check(pkt);
 
@@ -68,7 +68,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode verack packets', () => {
+    it("should encode/decode verack packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.VERACK);
       };
@@ -80,7 +80,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode ping packets', () => {
+    it("should encode/decode ping packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.PING);
         assert.bufferEqual(pkt.nonce, Buffer.alloc(8, 0x01));
@@ -93,7 +93,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode pong packets', () => {
+    it("should encode/decode pong packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.PONG);
         assert.bufferEqual(pkt.nonce, Buffer.alloc(8, 0x01));
@@ -106,7 +106,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode getaddr packets', () => {
+    it("should encode/decode getaddr packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.GETADDR);
       };
@@ -118,18 +118,18 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode addr packets', () => {
+    it("should encode/decode addr packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.ADDR);
 
         let addr = pkt.items[0];
-        assert.equal(addr.host, '127.0.0.2');
+        assert.equal(addr.host, "127.0.0.2");
         assert.equal(addr.port, 8334);
         assert.equal(addr.services, 101);
         assert.equal(addr.time, 1558405603);
 
         addr = pkt.items[1];
-        assert.equal(addr.host, '127.0.0.3');
+        assert.equal(addr.host, "127.0.0.3");
         assert.equal(addr.port, 8333);
         assert.equal(addr.services, 102);
         assert.equal(addr.time, 1558405602);
@@ -137,17 +137,17 @@ describe('Net', function() {
 
       const items = [
         new NetAddress({
-          host: '127.0.0.2',
+          host: "127.0.0.2",
           port: 8334,
           services: 101,
-          time: 1558405603
+          time: 1558405603,
         }),
         new NetAddress({
-          host: '127.0.0.3',
+          host: "127.0.0.3",
           port: 8333,
           services: 102,
-          time: 1558405602
-        })
+          time: 1558405602,
+        }),
       ];
 
       let pkt = new packets.AddrPacket(items);
@@ -157,7 +157,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode inv packets', () => {
+    it("should encode/decode inv packets", () => {
       const check = (pkt, many) => {
         assert.equal(pkt.type, packets.types.INV);
 
@@ -180,7 +180,7 @@ describe('Net', function() {
 
       const items = [
         new InvItem(InvItem.types.TX, Buffer.alloc(32, 0x01)),
-        new InvItem(InvItem.types.TX, Buffer.alloc(32, 0x02))
+        new InvItem(InvItem.types.TX, Buffer.alloc(32, 0x02)),
       ];
 
       let pkt = new packets.InvPacket(items);
@@ -199,7 +199,7 @@ describe('Net', function() {
       check(pkt, true);
     });
 
-    it('should encode/decode getdata packets', () => {
+    it("should encode/decode getdata packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.GETDATA);
 
@@ -214,7 +214,7 @@ describe('Net', function() {
 
       const items = [
         new InvItem(InvItem.types.TX, Buffer.alloc(32, 0x01)),
-        new InvItem(InvItem.types.TX, Buffer.alloc(32, 0x02))
+        new InvItem(InvItem.types.TX, Buffer.alloc(32, 0x02)),
       ];
 
       let pkt = new packets.GetDataPacket(items);
@@ -224,7 +224,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode notfound packets', () => {
+    it("should encode/decode notfound packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.NOTFOUND);
 
@@ -239,7 +239,7 @@ describe('Net', function() {
 
       const items = [
         new InvItem(InvItem.types.TX, Buffer.alloc(32, 0x01)),
-        new InvItem(InvItem.types.TX, Buffer.alloc(32, 0x02))
+        new InvItem(InvItem.types.TX, Buffer.alloc(32, 0x02)),
       ];
 
       let pkt = new packets.NotFoundPacket(items);
@@ -249,7 +249,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode getblocks packets', () => {
+    it("should encode/decode getblocks packets", () => {
       const check = (pkt, values) => {
         assert.equal(pkt.type, packets.types.GETBLOCKS);
 
@@ -264,10 +264,7 @@ describe('Net', function() {
         }
       };
 
-      const locator = [
-        Buffer.alloc(32, 0x01),
-        Buffer.alloc(32, 0x02)
-      ];
+      const locator = [Buffer.alloc(32, 0x01), Buffer.alloc(32, 0x02)];
 
       const stop = Buffer.alloc(32, 0x03);
 
@@ -284,7 +281,7 @@ describe('Net', function() {
       check(pkt, false);
     });
 
-    it('should encode/decode getheaders packets', () => {
+    it("should encode/decode getheaders packets", () => {
       const check = (pkt, values) => {
         assert.equal(pkt.type, packets.types.GETHEADERS);
 
@@ -299,10 +296,7 @@ describe('Net', function() {
         }
       };
 
-      const locator = [
-        Buffer.alloc(32, 0x01),
-        Buffer.alloc(32, 0x02)
-      ];
+      const locator = [Buffer.alloc(32, 0x01), Buffer.alloc(32, 0x02)];
 
       const stop = Buffer.alloc(32, 0x03);
 
@@ -319,7 +313,7 @@ describe('Net', function() {
       check(pkt, false);
     });
 
-    it('should encode/decode headers packets', () => {
+    it("should encode/decode headers packets", () => {
       const check = (pkt, values, many) => {
         assert.equal(pkt.type, packets.types.HEADERS);
 
@@ -332,7 +326,10 @@ describe('Net', function() {
         assert.equal(pkt.items[0].time, 1558405603);
         assert.equal(pkt.items[0].bits, 403014710);
         assert.equal(pkt.items[0].nonce, 0x11);
-        assert.bufferEqual(pkt.items[0].extraNonce, Buffer.alloc(consensus.NONCE_SIZE, 0x11));
+        assert.bufferEqual(
+          pkt.items[0].extraNonce,
+          Buffer.alloc(consensus.NONCE_SIZE, 0x11)
+        );
 
         if (many) {
           for (let i = 1; i < 254; i++) {
@@ -343,7 +340,10 @@ describe('Net', function() {
             assert.equal(pkt.items[1].time, 1558405605);
             assert.equal(pkt.items[1].bits, 403014712);
             assert.equal(pkt.items[1].nonce, 0x11);
-            assert.bufferEqual(pkt.items[1].extraNonce, Buffer.alloc(consensus.NONCE_SIZE, 0x11));
+            assert.bufferEqual(
+              pkt.items[1].extraNonce,
+              Buffer.alloc(consensus.NONCE_SIZE, 0x11)
+            );
           }
         }
       };
@@ -360,8 +360,8 @@ describe('Net', function() {
           bits: 403014710,
           nonce: 0x11,
           extraNonce: Buffer.alloc(consensus.NONCE_SIZE, 0x11),
-          mask: Buffer.alloc(32, 0x00)
-        })
+          mask: Buffer.alloc(32, 0x00),
+        }),
       ];
 
       let pkt = new packets.HeadersPacket(items);
@@ -371,19 +371,21 @@ describe('Net', function() {
       check(pkt, false);
 
       while (items.length < 254) {
-        items.push(new Headers({
-          version: 0,
-          prevBlock: Buffer.alloc(32, 0x04),
-          merkleRoot: Buffer.alloc(32, 0x05),
-          witnessRoot: Buffer.alloc(32, 0x03),
-          treeRoot: Buffer.alloc(32, 0x04),
-          reservedRoot: Buffer.alloc(32, 0x06),
-          time: 1558405605,
-          bits: 403014712,
-          nonce: 0x11,
-          extraNonce: Buffer.alloc(consensus.NONCE_SIZE, 0x11),
-          mask: Buffer.alloc(32, 0x00)
-        }));
+        items.push(
+          new Headers({
+            version: 0,
+            prevBlock: Buffer.alloc(32, 0x04),
+            merkleRoot: Buffer.alloc(32, 0x05),
+            witnessRoot: Buffer.alloc(32, 0x03),
+            treeRoot: Buffer.alloc(32, 0x04),
+            reservedRoot: Buffer.alloc(32, 0x06),
+            time: 1558405605,
+            bits: 403014712,
+            nonce: 0x11,
+            extraNonce: Buffer.alloc(consensus.NONCE_SIZE, 0x11),
+            mask: Buffer.alloc(32, 0x00),
+          })
+        );
       }
 
       pkt = new packets.HeadersPacket(items);
@@ -393,7 +395,7 @@ describe('Net', function() {
       check(pkt, true);
     });
 
-    it('should encode/decode sendheaders packets', () => {
+    it("should encode/decode sendheaders packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.SENDHEADERS);
       };
@@ -405,7 +407,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode block packets', () => {
+    it("should encode/decode block packets", () => {
       const block = new Block(genesis.main);
       const memblock = MemBlock.decode(block.encode());
 
@@ -424,12 +426,14 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode tx packets', () => {
+    it("should encode/decode tx packets", () => {
       const tx = new TX({
-        inputs: [{
-          prevout: {index: 0, hash: Buffer.alloc(32, 0x00)}
-        }],
-        outputs: [{address: {hash: Buffer.alloc(20, 0x00), version: 0}}]
+        inputs: [
+          {
+            prevout: { index: 0, hash: Buffer.alloc(32, 0x00) },
+          },
+        ],
+        outputs: [{ address: { hash: Buffer.alloc(20, 0x00), version: 0 } }],
       });
 
       const check = (pkt) => {
@@ -444,21 +448,21 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode reject packets', () => {
+    it("should encode/decode reject packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.REJECT);
         assert.equal(pkt.message, packets.types.BLOCK);
-        assert.equal(pkt.reason, 'block');
-        assert.equal(packets.typesByVal[pkt.message], 'BLOCK');
-        assert.equal(pkt.getCode(), 'invalid');
+        assert.equal(pkt.reason, "block");
+        assert.equal(packets.typesByVal[pkt.message], "BLOCK");
+        assert.equal(pkt.getCode(), "invalid");
         assert.bufferEqual(pkt.hash, Buffer.alloc(32, 0x01));
       };
 
       let pkt = new packets.RejectPacket({
         message: packets.types.BLOCK,
         code: packets.RejectPacket.codes.INVALID,
-        reason: 'block',
-        hash: Buffer.alloc(32, 0x01)
+        reason: "block",
+        hash: Buffer.alloc(32, 0x01),
       });
 
       check(pkt);
@@ -467,8 +471,8 @@ describe('Net', function() {
       check(pkt);
 
       pkt = packets.RejectPacket.fromReason(
-        'invalid',
-        'block',
+        "invalid",
+        "block",
         packets.types.BLOCK,
         Buffer.alloc(32, 0x01)
       );
@@ -479,7 +483,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode mempool packets', () => {
+    it("should encode/decode mempool packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.MEMPOOL);
       };
@@ -490,14 +494,13 @@ describe('Net', function() {
       pkt = packets.MempoolPacket.decode(pkt.encode());
     });
 
-    it('should encode/decode filterload packets', () => {
+    it("should encode/decode filterload packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.FILTERLOAD);
         assert.equal(pkt.filter.test(Buffer.alloc(32, 0x01)), true);
       };
 
-      const filter = BloomFilter.fromRate(
-        20000, 0.001, BloomFilter.flags.ALL);
+      const filter = BloomFilter.fromRate(20000, 0.001, BloomFilter.flags.ALL);
 
       filter.add(Buffer.alloc(32, 0x01));
 
@@ -508,7 +511,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode filteradd packets', () => {
+    it("should encode/decode filteradd packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.FILTERADD);
         assert.bufferEqual(pkt.data, Buffer.alloc(32, 0x02));
@@ -521,7 +524,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode filterclear packets', () => {
+    it("should encode/decode filterclear packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.FILTERCLEAR);
       };
@@ -533,12 +536,14 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode merkleblock packets', () => {
+    it("should encode/decode merkleblock packets", () => {
       const block = new Block();
-      block.txs = [new TX({
-        inputs: [{prevout: {hash: Buffer.alloc(32), index: 0}}],
-        outputs: [{value: 1000}]
-      })];
+      block.txs = [
+        new TX({
+          inputs: [{ prevout: { hash: Buffer.alloc(32), index: 0 } }],
+          outputs: [{ value: 1000 }],
+        }),
+      ];
 
       const filter = new BloomFilter();
       const merkleblock = MerkleBlock.fromBlock(block, filter);
@@ -555,7 +560,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode feefilter packets', () => {
+    it("should encode/decode feefilter packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.FEEFILTER);
         assert.equal(pkt.rate, 120000);
@@ -568,7 +573,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode sendcmpct packets', () => {
+    it("should encode/decode sendcmpct packets", () => {
       const check = (pkt, mode, version) => {
         assert.equal(pkt.type, packets.types.SENDCMPCT);
         assert.equal(pkt.mode, mode);
@@ -588,12 +593,14 @@ describe('Net', function() {
       check(pkt, 1, 2);
     });
 
-    it('should encode/decode cmpctblock packets', () => {
+    it("should encode/decode cmpctblock packets", () => {
       const block = new Block();
-      block.txs = [new TX({
-        inputs: [{prevout: {hash: Buffer.alloc(32), index: 0}}],
-        outputs: [{value: 1000}]
-      })];
+      block.txs = [
+        new TX({
+          inputs: [{ prevout: { hash: Buffer.alloc(32), index: 0 } }],
+          outputs: [{ value: 1000 }],
+        }),
+      ];
 
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.CMPCTBLOCK);
@@ -609,7 +616,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode getblocktxn packets', () => {
+    it("should encode/decode getblocktxn packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.GETBLOCKTXN);
         assert.bufferEqual(pkt.request.hash, Buffer.alloc(32, 0x01));
@@ -618,7 +625,7 @@ describe('Net', function() {
 
       const request = new TXRequest({
         hash: Buffer.alloc(32, 0x01),
-        indexes: [2, 3, 5, 7, 11]
+        indexes: [2, 3, 5, 7, 11],
       });
 
       let pkt = new packets.GetBlockTxnPacket(request);
@@ -628,12 +635,14 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode blocktxn packets', () => {
+    it("should encode/decode blocktxn packets", () => {
       const block = new Block();
-      block.txs = [new TX({
-        inputs: [{prevout: {hash: Buffer.alloc(32), index: 0}}],
-        outputs: [{value: 1000}]
-      })];
+      block.txs = [
+        new TX({
+          inputs: [{ prevout: { hash: Buffer.alloc(32), index: 0 } }],
+          outputs: [{ value: 1000 }],
+        }),
+      ];
 
       const tx = block.txs[0];
 
@@ -645,7 +654,7 @@ describe('Net', function() {
 
       const response = new TXResponse({
         hash: Buffer.alloc(32, 0x01),
-        txs: [tx]
+        txs: [tx],
       });
 
       let pkt = new packets.BlockTxnPacket(response);
@@ -655,14 +664,17 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode getproof packets', () => {
+    it("should encode/decode getproof packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.GETPROOF);
         assert.bufferEqual(pkt.root, Buffer.alloc(32, 0x01));
         assert.bufferEqual(pkt.key, Buffer.alloc(32, 0x02));
       };
 
-      let pkt = new packets.GetProofPacket(Buffer.alloc(32, 0x01), Buffer.alloc(32, 0x02));
+      let pkt = new packets.GetProofPacket(
+        Buffer.alloc(32, 0x01),
+        Buffer.alloc(32, 0x02)
+      );
 
       check(pkt);
 
@@ -671,7 +683,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode proof packets', () => {
+    it("should encode/decode proof packets", () => {
       const root = Buffer.alloc(32, 0x00);
       const key = Buffer.alloc(32, 0x01);
       const proof = new UrkelProof();
@@ -680,7 +692,10 @@ describe('Net', function() {
         assert.equal(pkt.type, packets.types.PROOF);
         assert.bufferEqual(pkt.root, root);
         assert.bufferEqual(pkt.key, key);
-        assert.bufferEqual(pkt.proof.encode(blake2b, 256), proof.encode(blake2b, 256));
+        assert.bufferEqual(
+          pkt.proof.encode(blake2b, 256),
+          proof.encode(blake2b, 256)
+        );
       };
 
       let pkt = new packets.ProofPacket(root, key, proof);
@@ -690,7 +705,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode claim packets', () => {
+    it("should encode/decode claim packets", () => {
       const claim = new Claim();
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.CLAIM);
@@ -704,7 +719,7 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode airdrop packets', () => {
+    it("should encode/decode airdrop packets", () => {
       const rawProof = read(AIRDROP_PROOF_FILE);
       const proof = AirdropProof.decode(rawProof);
 
@@ -720,13 +735,16 @@ describe('Net', function() {
       check(pkt);
     });
 
-    it('should encode/decode unknown packets', () => {
+    it("should encode/decode unknown packets", () => {
       const check = (pkt) => {
         assert.equal(pkt.type, packets.types.UNKNOWN);
         assert.bufferEqual(pkt.data, Buffer.alloc(12, 0x01));
       };
 
-      let pkt = new packets.UnknownPacket(packets.types.UNKNOWN, Buffer.alloc(12, 0x01));
+      let pkt = new packets.UnknownPacket(
+        packets.types.UNKNOWN,
+        Buffer.alloc(12, 0x01)
+      );
       check(pkt);
 
       pkt = packets.UnknownPacket.decode(pkt.encode(), packets.types.UNKNOWN);
@@ -734,19 +752,19 @@ describe('Net', function() {
     });
   });
 
-  describe('Framer', function() {
-    it('will construct with network (primary)', () => {
+  describe("Framer", function () {
+    it("will construct with network (primary)", () => {
       const framer = new Framer();
-      assert.strictEqual(framer.network, Network.get('main'));
+      assert.strictEqual(framer.network, Network.get("main"));
     });
 
-    it('will construct with network (custom)', () => {
-      const framer = new Framer('regtest');
-      assert.strictEqual(framer.network, Network.get('regtest'));
+    it("will construct with network (custom)", () => {
+      const framer = new Framer("regtest");
+      assert.strictEqual(framer.network, Network.get("regtest"));
     });
 
-    it('throw with long command', () => {
-      const framer = new Framer('regtest');
+    it("throw with long command", () => {
+      const framer = new Framer("regtest");
       let err = null;
 
       // Packet types are defined by a uint8.
@@ -758,12 +776,12 @@ describe('Net', function() {
         err = e;
       }
       assert(err);
-      assert(err.type, 'AssertionError');
+      assert(err.type, "AssertionError");
     });
 
-    it('will frame payload with header', () => {
-      const framer = new Framer('regtest');
-      const network = Network.get('regtest');
+    it("will frame payload with header", () => {
+      const framer = new Framer("regtest");
+      const network = Network.get("regtest");
       const buf = Buffer.alloc(2, 0x01);
 
       const pkt = framer.packet(packets.types.PING, buf);
@@ -781,8 +799,8 @@ describe('Net', function() {
     });
   });
 
-  describe('Common', function() {
-    it('will give nonce', async () => {
+  describe("Common", function () {
+    it("will give nonce", async () => {
       const n = nonce();
       assert(Buffer.isBuffer(n));
       assert.equal(n.length, 8);

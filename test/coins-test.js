@@ -2,18 +2,18 @@
 /* eslint prefer-arrow-callback: "off" */
 /* eslint no-unused-vars: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const bio = require('bufio');
-const CoinEntry = require('../lib/coins/coinentry');
-const CoinView = require('../lib/coins/coinview');
-const Input = require('../lib/primitives/input');
-const Output = require('../lib/primitives/output');
-const Outpoint = require('../lib/primitives/outpoint');
-const common = require('./util/common');
+const assert = require("bsert");
+const bio = require("bufio");
+const CoinEntry = require("../lib/coins/coinentry");
+const CoinView = require("../lib/coins/coinview");
+const Input = require("../lib/primitives/input");
+const Output = require("../lib/primitives/output");
+const Outpoint = require("../lib/primitives/outpoint");
+const common = require("./util/common");
 
-const tx1 = common.readTX('tx1');
+const tx1 = common.readTX("tx1");
 
 function reserialize(coin) {
   const raw = coin.toRaw();
@@ -32,8 +32,8 @@ function deepCoinsEqual(a, b) {
   assert.bufferEqual(a.raw, b.raw);
 }
 
-describe('Coins', function() {
-  it('should instantiate coinview from tx', () => {
+describe("Coins", function () {
+  it("should instantiate coinview from tx", () => {
     const [tx] = tx1.getTX();
     const hash = tx.hash();
     const view = new CoinView();
@@ -60,7 +60,7 @@ describe('Coins', function() {
     deepCoinsEqual(entry, reserialize(entry));
   });
 
-  it('should spend an output', () => {
+  it("should spend an output", () => {
     const [tx] = tx1.getTX();
     const hash = tx.hash();
     const view = new CoinView();
@@ -86,7 +86,7 @@ describe('Coins', function() {
     assert.strictEqual(view.undo.items.length, 1);
   });
 
-  it('should handle coin view', () => {
+  it("should handle coin view", () => {
     const [tx, view] = tx1.getTX();
 
     const size = view.getSize(tx);

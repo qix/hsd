@@ -2,19 +2,19 @@
 /* eslint prefer-arrow-callback: "off" */
 /* eslint indent: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const Network = require('../lib/protocol/network');
-const util = require('../lib/utils/util');
-const NetAddress = require('../lib/net/netaddress');
-const Framer = require('../lib/net/framer');
-const Parser = require('../lib/net/parser');
-const packets = require('../lib/net/packets');
-const network = Network.get('main');
+const assert = require("bsert");
+const Network = require("../lib/protocol/network");
+const util = require("../lib/utils/util");
+const NetAddress = require("../lib/net/netaddress");
+const Framer = require("../lib/net/framer");
+const Parser = require("../lib/net/parser");
+const packets = require("../lib/net/packets");
+const network = Network.get("main");
 
-describe('Protocol', function() {
-  const pkg = require('../lib/pkg');
+describe("Protocol", function () {
+  const pkg = require("../lib/pkg");
   const agent = `/${pkg.name}:${pkg.version}/`;
 
   let parser, framer;
@@ -26,7 +26,7 @@ describe('Protocol', function() {
 
   function packetTest(type, payload, test) {
     it(`should encode/decode ${packets.typesByVal[type]}`, (cb) => {
-      parser.once('packet', (packet) => {
+      parser.once("packet", (packet) => {
         try {
           assert.strictEqual(packet.type, type);
           test(packet);
@@ -49,7 +49,7 @@ describe('Protocol', function() {
     nonce: Buffer.allocUnsafe(8),
     agent: agent,
     height: 0,
-    noRelay: false
+    noRelay: false,
   });
 
   packetTest(packets.types.VERSION, v1, (payload) => {
@@ -67,7 +67,7 @@ describe('Protocol', function() {
     nonce: Buffer.allocUnsafe(8),
     agent: agent,
     height: 10,
-    noRelay: true
+    noRelay: true,
   });
 
   packetTest(packets.types.VERSION, v2, (payload) => {
@@ -77,34 +77,33 @@ describe('Protocol', function() {
     assert.strictEqual(payload.noRelay, true);
   });
 
-  packetTest(packets.types.VERACK, new packets.VerackPacket(), (payload) => {
-  });
+  packetTest(packets.types.VERACK, new packets.VerackPacket(), (payload) => {});
 
   const hosts = [
     new NetAddress({
       services: 1,
-      host: '127.0.0.1',
+      host: "127.0.0.1",
       port: 8333,
-      time: util.now()
+      time: util.now(),
     }),
     new NetAddress({
       services: 1,
-      host: '::123:456:789a',
+      host: "::123:456:789a",
       port: 18333,
-      time: util.now()
-    })
+      time: util.now(),
+    }),
   ];
 
   packetTest(packets.types.ADDR, new packets.AddrPacket(hosts), (payload) => {
     assert(Array.isArray(payload.items));
     assert.strictEqual(payload.items.length, 2);
 
-    assert(typeof payload.items[0].time === 'number');
+    assert(typeof payload.items[0].time === "number");
     assert.strictEqual(payload.items[0].services, 1);
     assert.strictEqual(payload.items[0].host, hosts[0].host);
     assert.strictEqual(payload.items[0].port, hosts[0].port);
 
-    assert(typeof payload.items[1].time === 'number');
+    assert(typeof payload.items[1].time === "number");
     assert.strictEqual(payload.items[1].services, 1);
     assert.strictEqual(payload.items[1].host, hosts[1].host);
     assert.strictEqual(payload.items[1].port, hosts[1].port);

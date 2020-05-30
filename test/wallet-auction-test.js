@@ -2,49 +2,44 @@
 /* eslint prefer-arrow-callback: "off" */
 /* eslint no-return-assign: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const Chain = require('../lib/blockchain/chain');
-const {states} = require('../lib/covenants/namestate');
-const WorkerPool = require('../lib/workers/workerpool');
-const Miner = require('../lib/mining/miner');
-const WalletDB = require('../lib/wallet/walletdb');
-const Network = require('../lib/protocol/network');
-const rules = require('../lib/covenants/rules');
+const assert = require("bsert");
+const Chain = require("../lib/blockchain/chain");
+const { states } = require("../lib/covenants/namestate");
+const WorkerPool = require("../lib/workers/workerpool");
+const Miner = require("../lib/mining/miner");
+const WalletDB = require("../lib/wallet/walletdb");
+const Network = require("../lib/protocol/network");
+const rules = require("../lib/covenants/rules");
 
-const network = Network.get('regtest');
+const network = Network.get("regtest");
 const NAME1 = rules.grindName(5, 2, network);
-const {
-  treeInterval,
-  biddingPeriod,
-  revealPeriod
-
-} = network.names;
+const { treeInterval, biddingPeriod, revealPeriod } = network.names;
 
 const workers = new WorkerPool({
-  enabled: false
+  enabled: false,
 });
 
 const chain = new Chain({
   memory: true,
   network,
-  workers
+  workers,
 });
 
 const miner = new Miner({
   chain,
-  workers
+  workers,
 });
 
 const cpu = miner.cpu;
 
 const wdb = new WalletDB({
   network: network,
-  workers: workers
+  workers: workers,
 });
 
-describe('Wallet Auction', function() {
+describe("Wallet Auction", function () {
   let winner, openAuctionMTX, openAuctionMTX2;
 
   before(async () => {
@@ -55,7 +50,7 @@ describe('Wallet Auction', function() {
 
     // Set up wallet
     winner = await wdb.create();
-    chain.on('connect', async (entry, block) => {
+    chain.on("connect", async (entry, block) => {
       await wdb.addBlock(entry, block.txs);
     });
 
@@ -74,14 +69,14 @@ describe('Wallet Auction', function() {
     await chain.close();
   });
 
-  it('should open auction', async () => {
+  it("should open auction", async () => {
     openAuctionMTX = await winner.createOpen(NAME1, false);
     await winner.sign(openAuctionMTX);
     const tx = openAuctionMTX.toTX();
     await wdb.addTX(tx);
   });
 
-  it('should fail to create duplicate open', async () => {
+  it("should fail to create duplicate open", async () => {
     let err;
     try {
       await winner.createOpen(NAME1, false);
@@ -93,7 +88,7 @@ describe('Wallet Auction', function() {
     assert.strictEqual(err.message, `Already sent an open for: ${NAME1}.`);
   });
 
-  it('should mine 1 block', async () => {
+  it("should mine 1 block", async () => {
     const job = await cpu.createJob();
     job.addTX(openAuctionMTX.toTX(), openAuctionMTX.view);
     job.refresh();
@@ -103,7 +98,7 @@ describe('Wallet Auction', function() {
     assert(await chain.add(block));
   });
 
-  it('should fail to re-open auction during OPEN phase', async () => {
+  it("should fail to re-open auction during OPEN phase", async () => {
     let err;
     try {
       await winner.createOpen(NAME1, false);
@@ -112,10 +107,10 @@ describe('Wallet Auction', function() {
     }
 
     assert(err);
-    assert.strictEqual(err.message, 'Name is already opening.');
+    assert.strictEqual(err.message, "Name is already opening.");
   });
 
-  it('should mine enough blocks to enter BIDDING phase', async () => {
+  it("should mine enough blocks to enter BIDDING phase", async () => {
     for (let i = 0; i < treeInterval; i++) {
       const block = await cpu.mineBlock();
       assert(block);
@@ -123,7 +118,7 @@ describe('Wallet Auction', function() {
     }
   });
 
-  it('should fail to re-open auction during BIDDING phase', async () => {
+  it("should fail to re-open auction during BIDDING phase", async () => {
     let err;
     try {
       await winner.createOpen(NAME1, false);
@@ -132,10 +127,10 @@ describe('Wallet Auction', function() {
     }
 
     assert(err);
-    assert.strictEqual(err.message, 'Name is not available.');
+    assert.strictEqual(err.message, "Name is not available.");
   });
 
-  it('should mine enough blocks to expire auction', async () => {
+  it("should mine enough blocks to expire auction", async () => {
     for (let i = 0; i < biddingPeriod + revealPeriod; i++) {
       const block = await cpu.mineBlock();
       assert(block);
@@ -143,14 +138,14 @@ describe('Wallet Auction', function() {
     }
   });
 
-  it('should open auction (again)', async () => {
+  it("should open auction (again)", async () => {
     openAuctionMTX2 = await winner.createOpen(NAME1, false);
     await winner.sign(openAuctionMTX2);
     const tx = openAuctionMTX2.toTX();
     await wdb.addTX(tx);
   });
 
-  it('should fail to create duplicate open (again)', async () => {
+  it("should fail to create duplicate open (again)", async () => {
     let err;
     try {
       await winner.createOpen(NAME1, false);
@@ -162,7 +157,7 @@ describe('Wallet Auction', function() {
     assert.strictEqual(err.message, `Already sent an open for: ${NAME1}.`);
   });
 
-  it('should confirm OPEN transaction', async () => {
+  it("should confirm OPEN transaction", async () => {
     const job = await cpu.createJob();
     job.addTX(openAuctionMTX2.toTX(), openAuctionMTX2.view);
     job.refresh();

@@ -7,25 +7,25 @@
 /* eslint-env mocha */
 /* eslint prefer-arrow-callback: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const fs = require('fs');
-const {resolve} = require('path');
-const random = require('bcrypto/lib/random');
-const FullNode = require('../lib/node/fullnode');
-const SPVNode = require('../lib/node/spvnode');
-const AirdropProof = require('../lib/primitives/airdropproof');
-const BlockTemplate = require('../lib/mining/template');
-const Block = require('../lib/primitives/block');
-const consensus = require('../lib/protocol/consensus');
-const Network = require('../lib/protocol/network');
-const common = require('../lib/blockchain/common');
+const assert = require("bsert");
+const fs = require("fs");
+const { resolve } = require("path");
+const random = require("bcrypto/lib/random");
+const FullNode = require("../lib/node/fullnode");
+const SPVNode = require("../lib/node/spvnode");
+const AirdropProof = require("../lib/primitives/airdropproof");
+const BlockTemplate = require("../lib/mining/template");
+const Block = require("../lib/primitives/block");
+const consensus = require("../lib/protocol/consensus");
+const Network = require("../lib/protocol/network");
+const common = require("../lib/blockchain/common");
 const VERIFY_NONE = common.flags.VERIFY_NONE;
 
-const network = Network.get('regtest');
-const PROOF_FILE = resolve(__dirname, 'data', 'airdrop-proof.base64');
-const raw = Buffer.from(fs.readFileSync(PROOF_FILE, 'binary'), 'base64');
+const network = Network.get("regtest");
+const PROOF_FILE = resolve(__dirname, "data", "airdrop-proof.base64");
+const raw = Buffer.from(fs.readFileSync(PROOF_FILE, "binary"), "base64");
 const proof = AirdropProof.decode(raw);
 
 /**
@@ -36,15 +36,15 @@ const proof = AirdropProof.decode(raw);
  */
 
 function createNode(type) {
-  if (type === 'spv')
+  if (type === "spv")
     return new SPVNode({
       memory: true,
-      network: 'regtest'
+      network: "regtest",
     });
 
   return new FullNode({
     memory: true,
-    network: 'regtest'
+    network: "regtest",
   });
 }
 
@@ -70,11 +70,11 @@ function mockBlock(prev) {
     bits: network.pow.bits,
     nonce: 0,
     extraNonce: random.randomBytes(24),
-    mask: random.randomBytes(32)
+    mask: random.randomBytes(32),
   });
 }
 
-describe('Disable GooSig', function() {
+describe("Disable GooSig", function () {
   let goosigStop;
 
   before(() => {
@@ -86,7 +86,7 @@ describe('Disable GooSig', function() {
     network.goosigStop = goosigStop;
   });
 
-  describe('Before Disable', () => {
+  describe("Before Disable", () => {
     let node;
 
     before(async () => {
@@ -98,21 +98,21 @@ describe('Disable GooSig', function() {
       await node.close();
     });
 
-    it('should accept GooSig based airdrop in mempool', async () => {
+    it("should accept GooSig based airdrop in mempool", async () => {
       assert(node.chain.height < node.network.goosigStop);
       await node.mempool.addAirdrop(proof);
       assert.strictEqual(node.mempool.airdrops.size, 1);
       assert(node.mempool.has(proof.hash()));
     });
 
-    it('should accept GooSig based airdrop in block', async () => {
+    it("should accept GooSig based airdrop in block", async () => {
       const block = await node.miner.mineBlock();
       assert.strictEqual(block.txs[0].inputs.length, 2);
       assert(await node.chain.add(block));
     });
   });
 
-  describe('After Disable', () => {
+  describe("After Disable", () => {
     let node;
 
     before(async () => {
@@ -124,7 +124,7 @@ describe('Disable GooSig', function() {
       await node.close();
     });
 
-    it('should reject GooSig based airdrop in mempool', async () => {
+    it("should reject GooSig based airdrop in mempool", async () => {
       while (node.chain.height - 1 < node.network.goosigStop) {
         const block = await node.miner.mineBlock();
         assert(await node.chain.add(block));
@@ -139,12 +139,12 @@ describe('Disable GooSig', function() {
         err = e;
       }
 
-      assert.equal(err.type, 'VerifyError');
-      assert.equal(err.reason, 'bad-goosig-disabled');
+      assert.equal(err.type, "VerifyError");
+      assert.equal(err.reason, "bad-goosig-disabled");
       assert.equal(err.score, 0);
     });
 
-    it('should reject GooSig based airdrop in block', async () => {
+    it("should reject GooSig based airdrop in block", async () => {
       const tip = node.chain.tip;
       const version = await node.chain.computeBlockVersion(tip);
       const mtp = await node.chain.getMedianTime(tip);
@@ -160,15 +160,21 @@ describe('Disable GooSig', function() {
         version: version,
         time: time,
         bits: target,
-        mtp: mtp
+        mtp: mtp,
       });
 
       template.addAirdrop(proof);
       template.refresh();
 
-      let block = template.toBlock(), nonce = 0;
+      let block = template.toBlock(),
+        nonce = 0;
       while (!block.verifyPOW()) {
-        const proof = template.getProof(nonce++, time, consensus.ZERO_NONCE, consensus.ZERO_HASH);
+        const proof = template.getProof(
+          nonce++,
+          time,
+          consensus.ZERO_NONCE,
+          consensus.ZERO_HASH
+        );
         block = template.commit(proof);
       }
 
@@ -179,8 +185,8 @@ describe('Disable GooSig', function() {
         err = e;
       }
 
-      assert.equal(err.type, 'VerifyError');
-      assert.equal(err.reason, 'bad-goosig-disabled');
+      assert.equal(err.type, "VerifyError");
+      assert.equal(err.reason, "bad-goosig-disabled");
       assert.equal(err.score, 100);
 
       // Block was added to invalid cache to
@@ -189,7 +195,7 @@ describe('Disable GooSig', function() {
     });
   });
 
-  describe('Clear Mempool', () => {
+  describe("Clear Mempool", () => {
     let node;
 
     before(async () => {
@@ -202,7 +208,7 @@ describe('Disable GooSig', function() {
       await node.close();
     });
 
-    it('should remove GooSig based airdrop', async () => {
+    it("should remove GooSig based airdrop", async () => {
       assert.strictEqual(node.mempool.airdrops.size, 1);
       assert(node.mempool.has(proof.hash()));
 
@@ -216,11 +222,11 @@ describe('Disable GooSig', function() {
     });
   });
 
-  describe('SPV', () => {
+  describe("SPV", () => {
     let node;
 
     before(async () => {
-      node = createNode('spv');
+      node = createNode("spv");
       await node.open();
     });
 
@@ -228,11 +234,11 @@ describe('Disable GooSig', function() {
       await node.close();
     });
 
-    it('should not send airdrop after', async () => {
+    it("should not send airdrop after", async () => {
       const genesis = await node.chain.getEntryByHeight(0);
 
       let err = null;
-      node.once('error', (error) => {
+      node.once("error", (error) => {
         err = error;
       });
 
@@ -246,8 +252,7 @@ describe('Disable GooSig', function() {
       await node.sendAirdrop(proof);
 
       assert(err);
-      assert.strictEqual(err.message, 'GooSig disabled.');
+      assert.strictEqual(err.message, "GooSig disabled.");
     });
   });
 });
-

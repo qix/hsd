@@ -8,57 +8,57 @@
 /* eslint prefer-arrow-callback: "off" */
 /* eslint no-return-assign: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const bio = require('bufio');
-const {NodeClient} = require('hs-client');
-const Network = require('../lib/protocol/network');
-const FullNode = require('../lib/node/fullnode');
-const Address = require('../lib/primitives/address');
-const Mnemonic = require('../lib/hd/mnemonic');
-const Witness = require('../lib/script/witness');
-const Script = require('../lib/script/script');
-const HDPrivateKey = require('../lib/hd/private');
-const Output = require('../lib/primitives/output');
-const Coin = require('../lib/primitives/coin');
-const MTX = require('../lib/primitives/mtx');
-const rules = require('../lib/covenants/rules');
-const common = require('./util/common');
-const mnemonics = require('./data/mnemonic-english.json');
+const assert = require("bsert");
+const bio = require("bufio");
+const { NodeClient } = require("hs-client");
+const Network = require("../lib/protocol/network");
+const FullNode = require("../lib/node/fullnode");
+const Address = require("../lib/primitives/address");
+const Mnemonic = require("../lib/hd/mnemonic");
+const Witness = require("../lib/script/witness");
+const Script = require("../lib/script/script");
+const HDPrivateKey = require("../lib/hd/private");
+const Output = require("../lib/primitives/output");
+const Coin = require("../lib/primitives/coin");
+const MTX = require("../lib/primitives/mtx");
+const rules = require("../lib/covenants/rules");
+const common = require("./util/common");
+const mnemonics = require("./data/mnemonic-english.json");
 // Commonly used test mnemonic
 const phrase = mnemonics[0][1];
 
-const network = Network.get('regtest');
-const {types} = rules;
+const network = Network.get("regtest");
+const { types } = rules;
 
 const node = new FullNode({
-  network: 'regtest',
-  apiKey: 'foo',
+  network: "regtest",
+  apiKey: "foo",
   walletAuth: true,
   memory: true,
   indexTx: true,
   indexAddress: true,
-  rejectAbsurdFees: false
+  rejectAbsurdFees: false,
 });
 
 const nclient = new NodeClient({
   port: network.rpcPort,
-  apiKey: 'foo'
+  apiKey: "foo",
 });
 
 let cbAddress, privkey, pubkey;
 let socketData, mempoolData;
 
-const {treeInterval} = network.names;
+const { treeInterval } = network.names;
 
-describe('Node HTTP', function() {
+describe("Node HTTP", function () {
   this.timeout(15000);
 
   before(async () => {
     await node.open();
     await nclient.open();
-    await nclient.call('watch chain');
+    await nclient.call("watch chain");
 
     const mnemonic = Mnemonic.fromPhrase(phrase);
     const priv = HDPrivateKey.fromMnemonic(mnemonic);
@@ -71,15 +71,15 @@ describe('Node HTTP', function() {
 
     cbAddress = Address.fromPubkey(pubkey).toString(network.type);
 
-    nclient.bind('tree commit', (root, entry, block) => {
+    nclient.bind("tree commit", (root, entry, block) => {
       assert.ok(root);
       assert.ok(block);
       assert.ok(entry);
 
-      socketData.push({root, entry, block});
+      socketData.push({ root, entry, block });
     });
 
-    node.mempool.on('tx', (tx) => {
+    node.mempool.on("tx", (tx) => {
       mempoolData[tx.txid()] = true;
     });
   });
@@ -94,16 +94,16 @@ describe('Node HTTP', function() {
     await node.close();
   });
 
-  describe('Websockets', function () {
-    describe('tree commit', () => {
-      it('should mine 1 tree interval', async () => {
+  describe("Websockets", function () {
+    describe("tree commit", () => {
+      it("should mine 1 tree interval", async () => {
         await mineBlocks(treeInterval, cbAddress);
         assert.equal(socketData.length, 1);
       });
 
-      it('should send the correct tree root', async () => {
-        const name = await nclient.execute('grindname', [5]);
-        const rawName = Buffer.from(name, 'ascii');
+      it("should send the correct tree root", async () => {
+        const name = await nclient.execute("grindname", [5]);
+        const rawName = Buffer.from(name, "ascii");
         const nameHash = rules.hashName(rawName);
 
         const u32 = Buffer.alloc(4);
@@ -114,8 +114,8 @@ describe('Node HTTP', function() {
           value: 0,
           covenant: {
             type: types.OPEN,
-            items: [nameHash, u32, rawName]
-          }
+            items: [nameHash, u32, rawName],
+          },
         });
 
         const mtx = new MTX();
@@ -150,7 +150,7 @@ describe('Node HTTP', function() {
         await mineBlocks(treeInterval, cbAddress);
         assert.equal(socketData.length, 1);
 
-        const {root, block, entry} = socketData[0];
+        const { root, block, entry } = socketData[0];
         assert.bufferEqual(node.chain.db.treeRoot(), root);
 
         const info = await nclient.getInfo();
@@ -167,10 +167,10 @@ describe('Node HTTP', function() {
 async function mineBlocks(count, address) {
   for (let i = 0; i < count; i++) {
     const obj = { complete: false };
-    node.once('block', () => {
+    node.once("block", () => {
       obj.complete = true;
     });
-    await nclient.execute('generatetoaddress', [1, address]);
-    await common.forValue(obj, 'complete', true);
+    await nclient.execute("generatetoaddress", [1, address]);
+    await common.forValue(obj, "complete", true);
   }
 }

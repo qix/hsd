@@ -1,9 +1,9 @@
-'use strict';
+"use strict";
 
-const assert = require('assert');
-const FullNode = require('../../lib/node/fullnode');
-const Network = require('../../lib/protocol/network');
-const Logger = require('blgr');
+const assert = require("assert");
+const FullNode = require("../../lib/node/fullnode");
+const Network = require("../../lib/protocol/network");
+const Logger = require("blgr");
 
 class NodeContext {
   constructor(network, size) {
@@ -20,29 +20,26 @@ class NodeContext {
 
       let last = port - 1;
 
-      if (last < this.network.port)
-        last = port;
+      if (last < this.network.port) last = port;
 
       const node = new FullNode({
         network: this.network,
         memory: true,
         logger: new Logger({
-          level: 'debug',
+          level: "debug",
           file: false,
-          console: false
+          console: false,
         }),
         listen: true,
-        publicHost: '127.0.0.1',
+        publicHost: "127.0.0.1",
         publicPort: port,
         httpPort: port + 100,
-        host: '127.0.0.1',
+        host: "127.0.0.1",
         port: port,
-        seeds: [
-          `127.0.0.1:${last}`
-        ]
+        seeds: [`127.0.0.1:${last}`],
       });
 
-      node.on('error', (err) => {
+      node.on("error", (err) => {
         node.logger.error(err);
       });
 
@@ -53,8 +50,7 @@ class NodeContext {
   open() {
     const jobs = [];
 
-    for (const node of this.nodes)
-      jobs.push(node.open());
+    for (const node of this.nodes) jobs.push(node.open());
 
     return Promise.all(jobs);
   }
@@ -62,8 +58,7 @@ class NodeContext {
   close() {
     const jobs = [];
 
-    for (const node of this.nodes)
-      jobs.push(node.close());
+    for (const node of this.nodes) jobs.push(node.close());
 
     return Promise.all(jobs);
   }
@@ -71,7 +66,7 @@ class NodeContext {
   async connect() {
     for (const node of this.nodes) {
       await node.connect();
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
     }
   }
 
@@ -79,21 +74,20 @@ class NodeContext {
     for (let i = this.nodes.length - 1; i >= 0; i--) {
       const node = this.nodes[i];
       await node.disconnect();
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
     }
   }
 
   startSync() {
     for (const node of this.nodes) {
       node.chain.synced = true;
-      node.chain.emit('full');
+      node.chain.emit("full");
       node.startSync();
     }
   }
 
   stopSync() {
-    for (const node of this.nodes)
-      node.stopSync();
+    for (const node of this.nodes) node.stopSync();
   }
 
   async generate(index, blocks) {
@@ -116,7 +110,7 @@ class NodeContext {
   }
 
   async sync() {
-    return new Promise(r => setTimeout(r, 3000));
+    return new Promise((r) => setTimeout(r, 3000));
   }
 }
 

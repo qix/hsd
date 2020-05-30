@@ -1,54 +1,54 @@
 /* eslint-env mocha */
 /* eslint prefer-arrow-callback: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const random = require('bcrypto/lib/random');
-const MempoolEntry = require('../lib/mempool/mempoolentry');
-const Mempool = require('../lib/mempool/mempool');
-const WorkerPool = require('../lib/workers/workerpool');
-const Chain = require('../lib/blockchain/chain');
-const ChainEntry = require('../lib/blockchain/chainentry');
-const MTX = require('../lib/primitives/mtx');
-const Coin = require('../lib/primitives/coin');
-const KeyRing = require('../lib/primitives/keyring');
-const Address = require('../lib/primitives/address');
-const Outpoint = require('../lib/primitives/outpoint');
-const Input = require('../lib/primitives/input');
-const Block = require('../lib/primitives/block');
-const Script = require('../lib/script/script');
-const Witness = require('../lib/script/witness');
-const CoinView = require('../lib/coins/coinview');
-const util = require('../lib/utils/util');
-const consensus = require('../lib/protocol/consensus');
-const MemWallet = require('./util/memwallet');
+const assert = require("bsert");
+const random = require("bcrypto/lib/random");
+const MempoolEntry = require("../lib/mempool/mempoolentry");
+const Mempool = require("../lib/mempool/mempool");
+const WorkerPool = require("../lib/workers/workerpool");
+const Chain = require("../lib/blockchain/chain");
+const ChainEntry = require("../lib/blockchain/chainentry");
+const MTX = require("../lib/primitives/mtx");
+const Coin = require("../lib/primitives/coin");
+const KeyRing = require("../lib/primitives/keyring");
+const Address = require("../lib/primitives/address");
+const Outpoint = require("../lib/primitives/outpoint");
+const Input = require("../lib/primitives/input");
+const Block = require("../lib/primitives/block");
+const Script = require("../lib/script/script");
+const Witness = require("../lib/script/witness");
+const CoinView = require("../lib/coins/coinview");
+const util = require("../lib/utils/util");
+const consensus = require("../lib/protocol/consensus");
+const MemWallet = require("./util/memwallet");
 const ALL = Script.hashType.ALL;
-const common = require('../lib/blockchain/common');
+const common = require("../lib/blockchain/common");
 const VERIFY_BODY = common.flags.VERIFY_BODY;
-const rules = require('../lib/covenants/rules');
-const {types} = rules;
-const NameState = require('../lib/covenants/namestate');
-const {states} = NameState;
-const ownership = require('../lib/covenants/ownership');
+const rules = require("../lib/covenants/rules");
+const { types } = rules;
+const NameState = require("../lib/covenants/namestate");
+const { states } = NameState;
+const ownership = require("../lib/covenants/ownership");
 
 const ONE_HASH = Buffer.alloc(32, 0x00);
 ONE_HASH[0] = 0x01;
 
 const workers = new WorkerPool({
-  enabled: true
+  enabled: true,
 });
 
 const chain = new Chain({
-  network: 'regtest',
+  network: "regtest",
   memory: true,
-  workers
+  workers,
 });
 
 const mempool = new Mempool({
   chain,
   memory: true,
-  workers
+  workers,
 });
 
 const wallet = new MemWallet();
@@ -93,7 +93,7 @@ async function dummyBlock(txs, coinbase = false) {
 
   const block = new Block({
     version: 1,
-    prevBlock: Buffer.from(chain.tip.hash, 'hex'),
+    prevBlock: Buffer.from(chain.tip.hash, "hex"),
     merkleRoot: random.randomBytes(32),
     witnessRoot: random.randomBytes(32),
     treeRoot: random.randomBytes(32),
@@ -103,22 +103,22 @@ async function dummyBlock(txs, coinbase = false) {
     nonce: 0,
     extraNonce: Buffer.alloc(consensus.NONCE_SIZE),
     mask: random.randomBytes(32),
-    txs: txs
+    txs: txs,
   });
 
   return [block, view];
 }
 
-describe('Mempool', function() {
+describe("Mempool", function () {
   this.timeout(5000);
 
-  it('should open mempool', async () => {
+  it("should open mempool", async () => {
     await workers.open();
     await chain.open();
     await mempool.open();
   });
 
-  it('should handle incoming orphans and TXs', async () => {
+  it("should handle incoming orphans and TXs", async () => {
     const key = KeyRing.generate();
     const addr = key.getAddress();
 
@@ -219,12 +219,14 @@ describe('Mempool', function() {
     }
 
     const txs = mempool.getHistory();
-    assert(txs.some((tx) => {
-      return tx.hash().equals(f1.hash());
-    }));
+    assert(
+      txs.some((tx) => {
+        return tx.hash().equals(f1.hash());
+      })
+    );
   });
 
-  it('should handle locktime', async () => {
+  it("should handle locktime", async () => {
     const key = KeyRing.generate();
     const addr = key.getAddress();
 
@@ -247,7 +249,7 @@ describe('Mempool', function() {
     chain.tip.height = 0;
   });
 
-  it('should handle invalid locktime', async () => {
+  it("should handle invalid locktime", async () => {
     const key = KeyRing.generate();
     const addr = key.getAddress();
 
@@ -277,7 +279,7 @@ describe('Mempool', function() {
     chain.tip.height = 0;
   });
 
-  it('should not cache a malleated wtx with mutated sig', async () => {
+  it("should not cache a malleated wtx with mutated sig", async () => {
     const key = KeyRing.generate();
     const addr = key.getAddress();
 
@@ -307,7 +309,7 @@ describe('Mempool', function() {
     assert(!mempool.hasReject(tx.hash()));
   });
 
-  it('should not cache non-malleated tx without sig', async () => {
+  it("should not cache non-malleated tx without sig", async () => {
     const key = KeyRing.generate();
     const addr = key.getAddress();
 
@@ -332,7 +334,7 @@ describe('Mempool', function() {
     cachedTX = tx;
   });
 
-  it('should clear reject cache', async () => {
+  it("should clear reject cache", async () => {
     const tx = new MTX();
     tx.addOutpoint(new Outpoint());
     tx.addOutput(wallet.getAddress(), 50000);
@@ -344,7 +346,7 @@ describe('Mempool', function() {
     assert(!mempool.hasReject(cachedTX.hash()));
   });
 
-  it('should remove tx after being included in block', async () => {
+  it("should remove tx after being included in block", async () => {
     const key = KeyRing.generate();
     const addr = key.getAddress();
 
@@ -400,28 +402,28 @@ describe('Mempool', function() {
     }
   });
 
-  it('should destroy mempool', async () => {
+  it("should destroy mempool", async () => {
     await mempool.close();
     await chain.close();
     await workers.close();
   });
 
-  describe('Mempool disconnect and reorg handling', function () {
+  describe("Mempool disconnect and reorg handling", function () {
     const workers = new WorkerPool({
       // Must be disabled for `ownership.ignore`.
-      enabled: false
+      enabled: false,
     });
 
     const chain = new Chain({
       memory: true,
       workers,
-      network: 'regtest'
+      network: "regtest",
     });
 
     const mempool = new Mempool({
       chain,
       workers,
-      memory: true
+      memory: true,
     });
 
     const COINBASE_MATURITY = mempool.network.coinbaseMaturity;
@@ -444,14 +446,14 @@ describe('Mempool', function() {
     // chaincoins (100k satoshi per coin).
     const N = 100;
     const chaincoins = new MemWallet({
-      network: 'regtest'
+      network: "regtest",
     });
 
-    chain.on('block', (block, entry) => {
+    chain.on("block", (block, entry) => {
       chaincoins.addBlock(entry, block.txs);
     });
 
-    chain.on('disconnect', (entry, block) => {
+    chain.on("disconnect", (entry, block) => {
       chaincoins.removeBlock(entry, block.txs);
     });
 
@@ -496,7 +498,7 @@ describe('Mempool', function() {
       return [block, view];
     }
 
-    it('should create coins in chain', async () => {
+    it("should create coins in chain", async () => {
       const mtx = new MTX();
       mtx.locktime = chain.height + 1;
       mtx.addInput(new Input());
@@ -524,7 +526,7 @@ describe('Mempool', function() {
       chaincoins.addTX(cb);
     });
 
-    it('should insert unconfirmed txs from removed block', async () => {
+    it("should insert unconfirmed txs from removed block", async () => {
       await mempool.reset();
       // Mempool is empty
       assert.strictEqual(mempool.map.size, 0);
@@ -583,7 +585,7 @@ describe('Mempool', function() {
       assert.strictEqual(mempool.map.size, 0);
     });
 
-    it('should handle reorg: coinbase spends', async () => {
+    it("should handle reorg: coinbase spends", async () => {
       // Mempool is empty
       await mempool.reset();
       assert.strictEqual(mempool.map.size, 0);
@@ -615,12 +617,15 @@ describe('Mempool', function() {
       spend = spend.toTX();
 
       // It's too early
-      await assert.rejects(async () => {
-        await mempool.addTX(spend, -1);
-      }, {
-        name: 'Error',
-        reason: 'bad-txns-premature-spend-of-coinbase'
-      });
+      await assert.rejects(
+        async () => {
+          await mempool.addTX(spend, -1);
+        },
+        {
+          name: "Error",
+          reason: "bad-txns-premature-spend-of-coinbase",
+        }
+      );
 
       // Add more blocks
       let block2;
@@ -675,7 +680,7 @@ describe('Mempool', function() {
       assert(!mempool.getTX(spend.hash()));
     });
 
-    it('should handle reorg: BIP68 sequence locks', async () => {
+    it("should handle reorg: BIP68 sequence locks", async () => {
       // Mempool is empty
       await mempool.reset();
       assert.strictEqual(mempool.map.size, 0);
@@ -762,7 +767,7 @@ describe('Mempool', function() {
       assert.strictEqual(mempool.map.size, 0);
     });
 
-    it('should handle reorg: covenants', async () => {
+    it("should handle reorg: covenants", async () => {
       // Mempool is empty
       await mempool.reset();
       assert.strictEqual(mempool.map.size, 0);
@@ -775,7 +780,7 @@ describe('Mempool', function() {
       open.addOutput(addr, 90000);
 
       const name = rules.grindName(5, 0, mempool.network);
-      const rawName = Buffer.from(name, 'ascii');
+      const rawName = Buffer.from(name, "ascii");
       const nameHash = rules.hashName(rawName);
       open.outputs[0].covenant.type = types.OPEN;
       open.outputs[0].covenant.pushHash(nameHash);
@@ -820,12 +825,15 @@ describe('Mempool', function() {
       bid = bid.toTX();
 
       // It's too early
-      await assert.rejects(async () => {
-        await mempool.addTX(bid, -1);
-      }, {
-        name: 'Error',
-        reason: 'invalid-covenant'
-      });
+      await assert.rejects(
+        async () => {
+          await mempool.addTX(bid, -1);
+        },
+        {
+          name: "Error",
+          reason: "invalid-covenant",
+        }
+      );
 
       // Add more blocks
       let block2;
@@ -904,24 +912,27 @@ describe('Mempool', function() {
       assert(!mempool.getTX(bid.hash()));
     });
 
-    it.skip('should handle reorg: name claim - DNSSEC timestamp', async () => {
+    it.skip("should handle reorg: name claim - DNSSEC timestamp", async () => {
       // Mempool is empty
       await mempool.reset();
       assert.strictEqual(mempool.map.size, 0);
 
       // Create a fake claim
-      const claim = await chaincoins.fakeClaim('cloudflare');
+      const claim = await chaincoins.fakeClaim("cloudflare");
 
       // It's too early to add this claim.
       // Note: If the regtest genesis block time stamp is ever changed,
       // it's possible it will conflict with the actual timestamps in the
       // RRSIG in the actual DNSSEC proof for cloudflare and break this test.
-      await assert.rejects(async () => {
-        await mempool.addClaim(claim);
-      }, {
-        name: 'Error',
-        reason: 'bad-claim-time'
-      });
+      await assert.rejects(
+        async () => {
+          await mempool.addClaim(claim);
+        },
+        {
+          name: "Error",
+          reason: "bad-claim-time",
+        }
+      );
 
       // Fast-forward the next block's timestamp to allow claim.
       const data = claim.getData(mempool.network);
@@ -990,13 +1001,13 @@ describe('Mempool', function() {
       assert(!mempool.getClaim(claim.hash()));
     });
 
-    it.skip('should handle reorg: name claim - block commitment', async () => {
+    it.skip("should handle reorg: name claim - block commitment", async () => {
       // Mempool is empty
       await mempool.reset();
       assert.strictEqual(mempool.map.size, 0);
 
       // Create a fake claim - just to get the correct timestamps
-      let claim = await chaincoins.fakeClaim('cloudflare');
+      let claim = await chaincoins.fakeClaim("cloudflare");
 
       // Fast-forward the next block's timestamp to allow claim.
       const data = claim.getData(mempool.network);
@@ -1023,11 +1034,11 @@ describe('Mempool', function() {
       // Get *very* recent block for commitment
       const options = {
         commitHeight: chain.tip.height,
-        commitHash: chain.tip.hash
+        commitHash: chain.tip.hash,
       };
 
       // Update the claim with the new block commitment
-      claim = await chaincoins.fakeClaim('cloudflare', options);
+      claim = await chaincoins.fakeClaim("cloudflare", options);
 
       // Now we can add it to the mempool.
       try {

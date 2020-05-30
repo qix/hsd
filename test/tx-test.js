@@ -1,23 +1,23 @@
 /* eslint-env mocha */
 /* eslint prefer-arrow-callback: "off" */
 
-'use strict';
+"use strict";
 
-const {encoding} = require('bufio');
-const assert = require('bsert');
-const random = require('bcrypto/lib/random');
-const consensus = require('../lib/protocol/consensus');
-const Network = require('../lib/protocol/network');
-const Address = require('../lib/primitives/address');
-const TX = require('../lib/primitives/tx');
-const MTX = require('../lib/primitives/mtx');
-const Output = require('../lib/primitives/output');
-const Outpoint = require('../lib/primitives/outpoint');
-const Script = require('../lib/script/script');
-const Witness = require('../lib/script/witness');
-const Input = require('../lib/primitives/input');
-const CoinView = require('../lib/coins/coinview');
-const KeyRing = require('../lib/primitives/keyring');
+const { encoding } = require("bufio");
+const assert = require("bsert");
+const random = require("bcrypto/lib/random");
+const consensus = require("../lib/protocol/consensus");
+const Network = require("../lib/protocol/network");
+const Address = require("../lib/primitives/address");
+const TX = require("../lib/primitives/tx");
+const MTX = require("../lib/primitives/mtx");
+const Output = require("../lib/primitives/output");
+const Outpoint = require("../lib/primitives/outpoint");
+const Script = require("../lib/script/script");
+const Witness = require("../lib/script/witness");
+const Input = require("../lib/primitives/input");
+const CoinView = require("../lib/coins/coinview");
+const KeyRing = require("../lib/primitives/keyring");
 
 const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
 const MAX_SAFE_ADDITION = 0xfffffffffffff;
@@ -28,20 +28,19 @@ function createInput(value, view) {
   const input = {
     prevout: {
       hash: hash,
-      index: 0
-    }
+      index: 0,
+    },
   };
 
   const output = new Output();
   output.value = value;
 
-  if (!view)
-    view = new CoinView();
+  if (!view) view = new CoinView();
 
   view.addOutput(new Outpoint(hash, 0), output);
 
   return [input, view];
-};
+}
 
 function sigopContext(witness, addr) {
   const fund = new TX();
@@ -85,106 +84,29 @@ function sigopContext(witness, addr) {
   return {
     fund: fund,
     spend: spend,
-    view: view
+    view: view,
   };
 }
 
-describe('TX', function() {
-  it('should fail on >51 bit coin values', () => {
+describe("TX", function () {
+  it("should fail on >51 bit coin values", () => {
     const [input, view] = createInput(consensus.MAX_MONEY + 1);
     const tx = new TX({
       version: 1,
       inputs: [input],
-      outputs: [{
-        script: [],
-        value: consensus.MAX_MONEY
-      }],
-      locktime: 0
-    });
-    assert.ok(tx.isSane());
-    assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
-  });
-
-  it('should handle 51 bit coin values', () => {
-    const [input, view] = createInput(consensus.MAX_MONEY);
-    const tx = new TX({
-      version: 1,
-      inputs: [input],
-      outputs: [{
-        script: [],
-        value: consensus.MAX_MONEY
-      }],
-      locktime: 0
-    });
-    assert.ok(tx.isSane());
-    assert.ok(tx.verifyInputs(view, 0, Network.get('main')));
-  });
-
-  it('should fail on >51 bit output values', () => {
-    const [input, view] = createInput(consensus.MAX_MONEY);
-    const tx = new TX({
-      version: 1,
-      inputs: [input],
-      outputs: [{
-        script: [],
-        value: consensus.MAX_MONEY + 1
-      }],
-      locktime: 0
-    });
-    assert.ok(!tx.isSane());
-    assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
-  });
-
-  it('should handle 51 bit output values', () => {
-    const [input, view] = createInput(consensus.MAX_MONEY);
-    const tx = new TX({
-      version: 1,
-      inputs: [input],
-      outputs: [{
-        script: [],
-        value: consensus.MAX_MONEY
-      }],
-      locktime: 0
-    });
-    assert.ok(tx.isSane());
-    assert.ok(tx.verifyInputs(view, 0, Network.get('main')));
-  });
-
-  it('should fail on >51 bit fees', () => {
-    const [input, view] = createInput(consensus.MAX_MONEY + 1);
-    const tx = new TX({
-      version: 1,
-      inputs: [input],
-      outputs: [{
-        script: [],
-        value: 0
-      }],
-      locktime: 0
-    });
-    assert.ok(tx.isSane());
-    assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
-  });
-
-  it('should fail on >51 bit values from multiple', () => {
-    const view = new CoinView();
-    const tx = new TX({
-      version: 1,
-      inputs: [
-        createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0],
-        createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0],
-        createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0]
+      outputs: [
+        {
+          script: [],
+          value: consensus.MAX_MONEY,
+        },
       ],
-      outputs: [{
-        script: [],
-        value: consensus.MAX_MONEY
-      }],
-      locktime: 0
+      locktime: 0,
     });
     assert.ok(tx.isSane());
-    assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
+    assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
   });
 
-  it('should fail on >51 bit output values from multiple', () => {
+  it("should handle 51 bit coin values", () => {
     const [input, view] = createInput(consensus.MAX_MONEY);
     const tx = new TX({
       version: 1,
@@ -192,53 +114,146 @@ describe('TX', function() {
       outputs: [
         {
           script: [],
-          value: Math.floor(consensus.MAX_MONEY / 2)
+          value: consensus.MAX_MONEY,
         },
-        {
-          script: [],
-          value: Math.floor(consensus.MAX_MONEY / 2)
-        },
-        {
-          script: [],
-          value: Math.floor(consensus.MAX_MONEY / 2)
-        }
       ],
-      locktime: 0
+      locktime: 0,
     });
-    assert.ok(!tx.isSane());
-    assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
+    assert.ok(tx.isSane());
+    assert.ok(tx.verifyInputs(view, 0, Network.get("main")));
   });
 
-  it('should fail on >51 bit fees from multiple', () => {
+  it("should fail on >51 bit output values", () => {
+    const [input, view] = createInput(consensus.MAX_MONEY);
+    const tx = new TX({
+      version: 1,
+      inputs: [input],
+      outputs: [
+        {
+          script: [],
+          value: consensus.MAX_MONEY + 1,
+        },
+      ],
+      locktime: 0,
+    });
+    assert.ok(!tx.isSane());
+    assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
+  });
+
+  it("should handle 51 bit output values", () => {
+    const [input, view] = createInput(consensus.MAX_MONEY);
+    const tx = new TX({
+      version: 1,
+      inputs: [input],
+      outputs: [
+        {
+          script: [],
+          value: consensus.MAX_MONEY,
+        },
+      ],
+      locktime: 0,
+    });
+    assert.ok(tx.isSane());
+    assert.ok(tx.verifyInputs(view, 0, Network.get("main")));
+  });
+
+  it("should fail on >51 bit fees", () => {
+    const [input, view] = createInput(consensus.MAX_MONEY + 1);
+    const tx = new TX({
+      version: 1,
+      inputs: [input],
+      outputs: [
+        {
+          script: [],
+          value: 0,
+        },
+      ],
+      locktime: 0,
+    });
+    assert.ok(tx.isSane());
+    assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
+  });
+
+  it("should fail on >51 bit values from multiple", () => {
     const view = new CoinView();
     const tx = new TX({
       version: 1,
       inputs: [
         createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0],
         createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0],
-        createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0]
+        createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0],
       ],
-      outputs: [{
-        script: [],
-        value: 0
-      }],
-      locktime: 0
+      outputs: [
+        {
+          script: [],
+          value: consensus.MAX_MONEY,
+        },
+      ],
+      locktime: 0,
     });
     assert.ok(tx.isSane());
-    assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
+    assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
   });
 
-  it('should fail to parse >53 bit values', () => {
+  it("should fail on >51 bit output values from multiple", () => {
+    const [input, view] = createInput(consensus.MAX_MONEY);
+    const tx = new TX({
+      version: 1,
+      inputs: [input],
+      outputs: [
+        {
+          script: [],
+          value: Math.floor(consensus.MAX_MONEY / 2),
+        },
+        {
+          script: [],
+          value: Math.floor(consensus.MAX_MONEY / 2),
+        },
+        {
+          script: [],
+          value: Math.floor(consensus.MAX_MONEY / 2),
+        },
+      ],
+      locktime: 0,
+    });
+    assert.ok(!tx.isSane());
+    assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
+  });
+
+  it("should fail on >51 bit fees from multiple", () => {
+    const view = new CoinView();
+    const tx = new TX({
+      version: 1,
+      inputs: [
+        createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0],
+        createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0],
+        createInput(Math.floor(consensus.MAX_MONEY / 2), view)[0],
+      ],
+      outputs: [
+        {
+          script: [],
+          value: 0,
+        },
+      ],
+      locktime: 0,
+    });
+    assert.ok(tx.isSane());
+    assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
+  });
+
+  it("should fail to parse >53 bit values", () => {
     const [input] = createInput(Math.floor(consensus.MAX_MONEY / 2));
 
     const tx = new TX({
       version: 1,
       inputs: [input],
-      outputs: [{
-        script: [],
-        value: 0xdeadbeef
-      }],
-      locktime: 0
+      outputs: [
+        {
+          script: [],
+          value: 0xdeadbeef,
+        },
+      ],
+      locktime: 0,
     });
 
     let raw = tx.encode();
@@ -256,72 +271,80 @@ describe('TX', function() {
     assert.throws(() => TX.decode(raw));
   });
 
-  it('should fail on 53 bit coin values', () => {
+  it("should fail on 53 bit coin values", () => {
     const [input, view] = createInput(MAX_SAFE_INTEGER);
     const tx = new TX({
       version: 1,
       inputs: [input],
-      outputs: [{
-        script: [],
-        value: consensus.MAX_MONEY
-      }],
-      locktime: 0
+      outputs: [
+        {
+          script: [],
+          value: consensus.MAX_MONEY,
+        },
+      ],
+      locktime: 0,
     });
     assert.ok(tx.isSane());
-    assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
+    assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
   });
 
-  it('should fail on 53 bit output values', () => {
+  it("should fail on 53 bit output values", () => {
     const [input, view] = createInput(consensus.MAX_MONEY);
     const tx = new TX({
       version: 1,
       inputs: [input],
-      outputs: [{
-        script: [],
-        value: MAX_SAFE_INTEGER
-      }],
-      locktime: 0
+      outputs: [
+        {
+          script: [],
+          value: MAX_SAFE_INTEGER,
+        },
+      ],
+      locktime: 0,
     });
     assert.ok(!tx.isSane());
-    assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
+    assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
   });
 
-  it('should fail on 53 bit fees', () => {
+  it("should fail on 53 bit fees", () => {
     const [input, view] = createInput(MAX_SAFE_INTEGER);
     const tx = new TX({
       version: 1,
       inputs: [input],
-      outputs: [{
-        script: [],
-        value: 0
-      }],
-      locktime: 0
+      outputs: [
+        {
+          script: [],
+          value: 0,
+        },
+      ],
+      locktime: 0,
     });
     assert.ok(tx.isSane());
-    assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
+    assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
   });
 
   for (const value of [MAX_SAFE_ADDITION, MAX_SAFE_INTEGER]) {
-    it('should fail on >53 bit values from multiple', () => {
+    it("should fail on >53 bit values from multiple", () => {
       const view = new CoinView();
       const tx = new TX({
         version: 1,
         inputs: [
           createInput(value, view)[0],
           createInput(value, view)[0],
-          createInput(value, view)[0]
+          createInput(value, view)[0],
         ],
-        outputs: [{
-          script: [],
-          value: consensus.MAX_MONEY
-        }],
-        locktime: 0
+        outputs: [
+          {
+            script: [],
+            value: consensus.MAX_MONEY,
+          },
+        ],
+        locktime: 0,
       });
       assert.ok(tx.isSane());
-      assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
+      assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
     });
 
-    it('should fail on >53 bit output values from multiple', () => {
+    it("should fail on >53 bit output values from multiple", () => {
       const [input, view] = createInput(consensus.MAX_MONEY);
       const tx = new TX({
         version: 1,
@@ -329,50 +352,49 @@ describe('TX', function() {
         outputs: [
           {
             script: [],
-            value: value
+            value: value,
           },
           {
             script: [],
-            value: value
+            value: value,
           },
           {
             script: [],
-            value: value
-          }
+            value: value,
+          },
         ],
-        locktime: 0
+        locktime: 0,
       });
       assert.ok(!tx.isSane());
-      assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
+      assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
     });
 
-    it('should fail on >53 bit fees from multiple', () => {
+    it("should fail on >53 bit fees from multiple", () => {
       const view = new CoinView();
       const tx = new TX({
         version: 1,
         inputs: [
           createInput(value, view)[0],
           createInput(value, view)[0],
-          createInput(value, view)[0]
+          createInput(value, view)[0],
         ],
-        outputs: [{
-          script: [],
-          value: 0
-        }],
-        locktime: 0
+        outputs: [
+          {
+            script: [],
+            value: 0,
+          },
+        ],
+        locktime: 0,
       });
       assert.ok(tx.isSane());
-      assert.ok(!tx.verifyInputs(view, 0, Network.get('main')));
+      assert.ok(!tx.verifyInputs(view, 0, Network.get("main")));
     });
   }
 
-  it('should count sigops for p2pkh', () => {
+  it("should count sigops for p2pkh", () => {
     const key = KeyRing.generate();
 
-    const witness = new Witness([
-      Buffer.from([0]),
-      Buffer.from([0])
-    ]);
+    const witness = new Witness([Buffer.from([0]), Buffer.from([0])]);
 
     {
       const ctx = sigopContext(witness, key.getAddress());
@@ -398,7 +420,7 @@ describe('TX', function() {
     }
   });
 
-  it('should count sigops for p2sh', () => {
+  it("should count sigops for p2sh", () => {
     const key = KeyRing.generate();
     const pub = key.publicKey;
 
@@ -408,7 +430,7 @@ describe('TX', function() {
     const witness = new Witness([
       Buffer.from([0]),
       Buffer.from([0]),
-      redeem.encode()
+      redeem.encode(),
     ]);
 
     const ctx = sigopContext(witness, addr);
@@ -416,7 +438,7 @@ describe('TX', function() {
     assert.strictEqual(ctx.spend.getSigops(ctx.view, 0), 2);
   });
 
-  it('should have standard inputs', () => {
+  it("should have standard inputs", () => {
     const key = KeyRing.generate();
     const pub = key.publicKey;
     const addr = Address.fromPubkey(pub, 0);

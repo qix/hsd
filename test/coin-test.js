@@ -2,25 +2,25 @@
 /* eslint prefer-arrow-callback: "off" */
 /* eslint no-unused-vars: "off" */
 
-'use strict';
+"use strict";
 
-const {BufferWriter} = require('bufio');
-const assert = require('bsert');
-const nodejsUtil = require('util');
-const random = require('bcrypto/lib/random');
+const { BufferWriter } = require("bufio");
+const assert = require("bsert");
+const nodejsUtil = require("util");
+const random = require("bcrypto/lib/random");
 
-const Coin = require('../lib/primitives/coin');
-const KeyRing = require('../lib/primitives/keyring');
-const common = require('../test/util/common');
-const {types, typesByVal} = require('../lib/covenants/rules');
+const Coin = require("../lib/primitives/coin");
+const KeyRing = require("../lib/primitives/keyring");
+const common = require("../test/util/common");
+const { types, typesByVal } = require("../lib/covenants/rules");
 
-const tx1 = common.readTX('tx1');
-const coin1 = common.readFile('coin1.raw');
+const tx1 = common.readTX("tx1");
+const coin1 = common.readFile("coin1.raw");
 
-describe('Coin', function() {
-  it('should serialize and deserialize from JSON', () => {
+describe("Coin", function () {
+  it("should serialize and deserialize from JSON", () => {
     const key = KeyRing.generate();
-    const networks = ['main', 'testnet', 'regtest', 'simnet'];
+    const networks = ["main", "testnet", "regtest", "simnet"];
 
     for (const network of networks) {
       const addr = key.getAddress().toString(network);
@@ -34,8 +34,8 @@ describe('Coin', function() {
         covenant: {
           type: types.OPEN,
           action: typesByVal[types.OPEN],
-          items: [item.toString('hex')]
-        }
+          items: [item.toString("hex")],
+        },
       };
 
       const fromJSON = Coin.fromJSON(json, network);
@@ -51,9 +51,9 @@ describe('Coin', function() {
     }
   });
 
-  it('should instantiate from tx', () => {
+  it("should instantiate from tx", () => {
     const [tx] = tx1.getTX();
-    const json = require('./data/coin1.json');
+    const json = require("./data/coin1.json");
     const want = Coin.fromJSON(json);
     const got = Coin.fromTX(tx, 0, -1);
 
@@ -66,8 +66,8 @@ describe('Coin', function() {
     assert.deepEqual(want.coinbase, got.coinbase);
   });
 
-  it('should instantiate from raw', () => {
-    const json = require('./data/coin1.json');
+  it("should instantiate from raw", () => {
+    const json = require("./data/coin1.json");
     const want = Coin.fromJSON(json);
     const got = Coin.fromRaw(coin1);
 
@@ -80,17 +80,17 @@ describe('Coin', function() {
     assert.deepEqual(want.coinbase, got.coinbase);
   });
 
-  it('should inspect Coin', () => {
+  it("should inspect Coin", () => {
     const coin = new Coin();
     const fmt = nodejsUtil.format(coin);
-    assert(typeof fmt === 'string');
-    assert(fmt.includes('version'));
-    assert(fmt.includes('height'));
-    assert(fmt.includes('value'));
-    assert(fmt.includes('address'));
-    assert(fmt.includes('covenant'));
-    assert(fmt.includes('coinbase'));
-    assert(fmt.includes('hash'));
-    assert(fmt.includes('index'));
+    assert(typeof fmt === "string");
+    assert(fmt.includes("version"));
+    assert(fmt.includes("height"));
+    assert(fmt.includes("value"));
+    assert(fmt.includes("address"));
+    assert(fmt.includes("covenant"));
+    assert(fmt.includes("coinbase"));
+    assert(fmt.includes("hash"));
+    assert(fmt.includes("index"));
   });
 });

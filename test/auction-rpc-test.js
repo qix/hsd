@@ -1,31 +1,27 @@
 /* eslint-env mocha */
 /* eslint prefer-arrow-callback: "off" */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const bio = require('bufio');
-const plugin = require('../lib/wallet/plugin');
-const rules = require('../lib/covenants/rules');
-const common = require('./util/common');
-const {ChainEntry, FullNode, KeyRing, MTX, Network, Path} = require('..');
-const {NodeClient, WalletClient} = require('hs-client');
+const assert = require("bsert");
+const bio = require("bufio");
+const plugin = require("../lib/wallet/plugin");
+const rules = require("../lib/covenants/rules");
+const common = require("./util/common");
+const { ChainEntry, FullNode, KeyRing, MTX, Network, Path } = require("..");
+const { NodeClient, WalletClient } = require("hs-client");
 
 class TestUtil {
   constructor(options) {
-    if (!options)
-      options = Object.create(null);
+    if (!options) options = Object.create(null);
 
-    if (!options.host)
-      options.host = 'localhost';
+    if (!options.host) options.host = "localhost";
 
-    if (!options.nport)
-      options.nport = 14037;
+    if (!options.nport) options.nport = 14037;
 
-    if (!options.wport)
-      options.wport = 14039;
+    if (!options.wport) options.wport = 14039;
 
-    this.network = Network.get('regtest');
+    this.network = Network.get("regtest");
 
     this.txs = {};
 
@@ -34,7 +30,7 @@ class TestUtil {
     this.node = new FullNode({
       memory: true,
       workers: true,
-      network: this.network.type
+      network: this.network.type,
     });
 
     this.node.use(plugin);
@@ -42,12 +38,12 @@ class TestUtil {
     this.nclient = new NodeClient({
       timeout: 15000,
       host: options.host,
-      port: options.nport
+      port: options.nport,
     });
 
     this.wclient = new WalletClient({
       host: options.host,
-      port: options.wport
+      port: options.wport,
     });
   }
 
@@ -60,8 +56,9 @@ class TestUtil {
    */
 
   async wrpc(method, params = []) {
-    return this.wclient.execute(method, params)
-      .then(data => data)
+    return this.wclient
+      .execute(method, params)
+      .then((data) => data)
       .catch((err) => {
         throw new Error(err);
       });
@@ -77,8 +74,9 @@ class TestUtil {
    */
 
   async nrpc(method, params = []) {
-    return this.nclient.execute(method, params)
-      .then(data => data)
+    return this.nclient
+      .execute(method, params)
+      .then((data) => data)
       .catch((err) => {
         throw new Error(err);
       });
@@ -89,7 +87,7 @@ class TestUtil {
    */
 
   async open() {
-    assert(!this.opened, 'TestUtil is already open.');
+    assert(!this.opened, "TestUtil is already open.");
     this.opened = true;
 
     await this.node.ensure();
@@ -100,20 +98,18 @@ class TestUtil {
     await this.nclient.open();
     await this.wclient.open();
 
-    this.node.plugins.walletdb.wdb.on('confirmed', ((details, tx) => {
+    this.node.plugins.walletdb.wdb.on("confirmed", (details, tx) => {
       const txid = tx.txid();
 
-      if (!this.txs[txid])
-        this.txs[txid] = txid;
-    }));
+      if (!this.txs[txid]) this.txs[txid] = txid;
+    });
 
-    this.nclient.bind('block connect', (data) => {
+    this.nclient.bind("block connect", (data) => {
       const br = bio.read(data);
-      const entry = (new ChainEntry()).read(br);
-      const hash = entry.hash.toString('hex');
+      const entry = new ChainEntry().read(br);
+      const hash = entry.hash.toString("hex");
 
-      if (!this.blocks[hash])
-        this.blocks[hash] = hash;
+      if (!this.blocks[hash]) this.blocks[hash] = hash;
     });
   }
 
@@ -122,7 +118,7 @@ class TestUtil {
    */
 
   async close() {
-    assert(this.opened, 'TestUtil is not open.');
+    assert(this.opened, "TestUtil is not open.");
     this.opened = false;
 
     await this.nclient.close();
@@ -139,16 +135,16 @@ class TestUtil {
   }
 }
 
-describe('Auction RPCs', function() {
+describe("Auction RPCs", function () {
   this.timeout(60000);
 
   const util = new TestUtil();
-  const name = rules.grindName(2, 0, Network.get('regtest'));
+  const name = rules.grindName(2, 0, Network.get("regtest"));
   let winner, loser;
 
-  const mineBlocks = async (num, wallet, account = 'default') => {
+  const mineBlocks = async (num, wallet, account = "default") => {
     const address = (await wallet.createAddress(account)).address;
-    const hashes = await util.nrpc('generatetoaddress', [num, address]);
+    const hashes = await util.nrpc("generatetoaddress", [num, address]);
     await util.confirmBlock(hashes.pop());
   };
 
@@ -163,7 +159,7 @@ describe('Auction RPCs', function() {
       const input = mtx.inputs[i];
       const coin = mtx.view.getCoinFor(input);
       const path = mtx.view.getPathFor(input);
-      const address = coin.address.toString('regtest');
+      const address = coin.address.toString("regtest");
       const key = await wallet.getKey(address);
 
       // Assert HD path.
@@ -177,14 +173,14 @@ describe('Auction RPCs', function() {
       const secret = (await wallet.getWIF(address)).privateKey;
       const ring = KeyRing.fromSecret(secret);
       mtx.sign(ring);
-    };
+    }
 
     // Verify mtx.
     assert(mtx.verify());
 
     // Submit and mine mtx, if necessary.
     if (submit) {
-      await util.nrpc('sendrawtransaction', [mtx.encode().toString('hex')]);
+      await util.nrpc("sendrawtransaction", [mtx.encode().toString("hex")]);
       await mineBlocks(1, wallet);
       await util.confirmTX(mtx.txid());
     }
@@ -195,9 +191,9 @@ describe('Auction RPCs', function() {
   before(async () => {
     util.node.network.coinbaseMaturity = 1;
     await util.open();
-    await util.wclient.createWallet('loser');
-    winner = await util.wclient.wallet('primary');
-    loser = await util.wclient.wallet('loser');
+    await util.wclient.createWallet("loser");
+    winner = await util.wclient.wallet("primary");
+    loser = await util.wclient.wallet("loser");
     await mineBlocks(5, winner);
     await mineBlocks(5, loser);
   });
@@ -207,114 +203,117 @@ describe('Auction RPCs', function() {
     await util.close();
   });
 
-  it('should create OPEN with signing paths', async () => {
+  it("should create OPEN with signing paths", async () => {
     // Create, assert, submit and mine OPEN.
     const submit = true;
-    const json = await util.wrpc('createopen', [name]);
+    const json = await util.wrpc("createopen", [name]);
     await processJSON(json, submit, winner);
 
     // Mine past OPEN period.
     await mineBlocks(util.network.names.treeInterval, winner);
   });
 
-  it('should create BID with signing paths', async () => {
+  it("should create BID with signing paths", async () => {
     // Create loser's BID.
-    await util.wrpc('selectwallet', [loser.id]);
-    assert(await util.wrpc('sendbid', [name, 4, 10]));
+    await util.wrpc("selectwallet", [loser.id]);
+    assert(await util.wrpc("sendbid", [name, 4, 10]));
 
     // Create, assert, submit and mine winner's BID.
-    await util.wrpc('selectwallet', [winner.id]);
+    await util.wrpc("selectwallet", [winner.id]);
     const submit = true;
-    const json = await util.wrpc('createbid', [name, 5, 10]);
+    const json = await util.wrpc("createbid", [name, 5, 10]);
     await processJSON(json, submit);
 
     // Mine past BID period.
     await mineBlocks(util.network.names.biddingPeriod, winner);
   });
 
-  it('should create REVEAL with signing paths', async () => {
+  it("should create REVEAL with signing paths", async () => {
     // Create loser's REVEAL.
-    await util.wrpc('selectwallet', [loser.id]);
-    assert(await util.wrpc('sendreveal', [name]));
+    await util.wrpc("selectwallet", [loser.id]);
+    assert(await util.wrpc("sendreveal", [name]));
 
     // Create, assert, submit and mine REVEAL.
-    await util.wrpc('selectwallet', [winner.id]);
+    await util.wrpc("selectwallet", [winner.id]);
     const submit = true;
-    const json = await util.wrpc('createreveal', [name]);
+    const json = await util.wrpc("createreveal", [name]);
     await processJSON(json, submit);
 
     // Mine past REVEAL period.
     await mineBlocks(util.network.names.revealPeriod, winner);
   });
 
-  it('should create REDEEM with signing paths', async () => {
+  it("should create REDEEM with signing paths", async () => {
     // Create, assert, submit and mine REDEEM.
-    await util.wrpc('selectwallet', [loser.id]);
+    await util.wrpc("selectwallet", [loser.id]);
     const submit = true;
-    const json = await util.wrpc('createredeem', [name]);
+    const json = await util.wrpc("createredeem", [name]);
     await processJSON(json, submit, loser);
   });
 
-  it('should create REGISTER with signing paths', async () => {
+  it("should create REGISTER with signing paths", async () => {
     // Create, assert, submit and mine REGISTER.
-    await util.wrpc('selectwallet', [winner.id]);
+    await util.wrpc("selectwallet", [winner.id]);
     const submit = true;
-    const json = await util.wrpc('createupdate', [name, {
-      records: [
-        {
-          type: 'NS',
-          ns: 'example.com.'
-        }
-      ]
-    }]);
+    const json = await util.wrpc("createupdate", [
+      name,
+      {
+        records: [
+          {
+            type: "NS",
+            ns: "example.com.",
+          },
+        ],
+      },
+    ]);
     await processJSON(json, submit);
 
     // Mine some blocks.
     await mineBlocks(util.network.names.treeInterval, winner);
   });
 
-  it('should create RENEW with signing paths', async () => {
+  it("should create RENEW with signing paths", async () => {
     // Create, assert, submit and mine RENEW.
     const submit = true;
-    const json = await util.wrpc('createrenewal', [name]);
+    const json = await util.wrpc("createrenewal", [name]);
     await processJSON(json, submit);
   });
 
-  it('should create TRANSFER with signing paths', async () => {
+  it("should create TRANSFER with signing paths", async () => {
     // Create, assert, submit and mine TRANSFER.
     const submit = true;
-    const address = (await loser.createAddress('default')).address;
-    const json = await util.wrpc('createtransfer', [name, address]);
+    const address = (await loser.createAddress("default")).address;
+    const json = await util.wrpc("createtransfer", [name, address]);
     await processJSON(json, submit);
   });
 
-  it('Should create TRANSFER cancellation with signing paths', async () => {
+  it("Should create TRANSFER cancellation with signing paths", async () => {
     // Create, assert, submit and mine TRANSFER cancellation.
     const submit = true;
-    const json = await util.wrpc('createcancel', [name]);
+    const json = await util.wrpc("createcancel", [name]);
     await processJSON(json, submit);
   });
 
-  it('should create FINALIZE with signing paths', async () => {
+  it("should create FINALIZE with signing paths", async () => {
     // Submit TRANSFER.
-    const address = (await loser.createAddress('default')).address;
-    await util.wrpc('selectwallet', [winner.id]);
-    assert(await util.wrpc('sendtransfer', [name, address]));
+    const address = (await loser.createAddress("default")).address;
+    await util.wrpc("selectwallet", [winner.id]);
+    assert(await util.wrpc("sendtransfer", [name, address]));
 
     // Mine past TRANSFER lockup period.
     await mineBlocks(util.network.names.transferLockup, winner);
 
     // Create, assert, submit and mine FINALIZE.
     const submit = true;
-    const json = await util.wrpc('createfinalize', [name]);
+    const json = await util.wrpc("createfinalize", [name]);
     await processJSON(json, submit);
   });
 
-  it('should create REVOKE with signing paths', async () => {
+  it("should create REVOKE with signing paths", async () => {
     // Create, assert, submit and mine REVOKE.
-    await util.wrpc('selectwallet', [loser.id]);
+    await util.wrpc("selectwallet", [loser.id]);
     const submit = true;
-    const json = await util.wrpc('createrevoke', [name]);
+    const json = await util.wrpc("createrevoke", [name]);
     await processJSON(json, submit, loser, true);
   });
 });

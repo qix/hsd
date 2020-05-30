@@ -4,36 +4,36 @@
  * https://github.com/handshake-org/hsd
  */
 
-'use strict';
+"use strict";
 
-const assert = require('bsert');
-const KeyRing = require('../lib/primitives/keyring');
-const MTX = require('../lib/primitives/mtx');
-const Script = require('../lib/script/script');
-const Mnemonic = require('../lib/hd/mnemonic');
-const HDPrivateKey = require('../lib/hd/private');
-const Coin = require('../lib/primitives/coin');
-const Output = require('../lib/primitives/output');
-const Witness = require('../lib/script/witness');
-const Network = require('../lib/protocol/network');
-const common = require('../lib/script/common');
-const {HARDENED} = require('../lib/hd/common');
+const assert = require("bsert");
+const KeyRing = require("../lib/primitives/keyring");
+const MTX = require("../lib/primitives/mtx");
+const Script = require("../lib/script/script");
+const Mnemonic = require("../lib/hd/mnemonic");
+const HDPrivateKey = require("../lib/hd/private");
+const Coin = require("../lib/primitives/coin");
+const Output = require("../lib/primitives/output");
+const Witness = require("../lib/script/witness");
+const Network = require("../lib/protocol/network");
+const common = require("../lib/script/common");
+const { HARDENED } = require("../lib/hd/common");
 
-const mnemonics = require('./data/mnemonic-english.json');
+const mnemonics = require("./data/mnemonic-english.json");
 const phrase = mnemonics[0][1];
 const mnemonic = Mnemonic.fromPhrase(phrase);
 
-const network = Network.get('regtest');
+const network = Network.get("regtest");
 
 // sighash types
 const SINGLEREVERSE = common.hashType.SINGLEREVERSE;
 
 const ONE_HASH = Buffer.alloc(32, 0x00);
 ONE_HASH[0] = 0x01;
-const COIN_TYPE= network.keyPrefix.coinType;
+const COIN_TYPE = network.keyPrefix.coinType;
 
-describe('Signature Hashes', function () {
-  describe('SINGLEREVERSE', function () {
+describe("Signature Hashes", function () {
+  describe("SINGLEREVERSE", function () {
     let path, keyring, addr, receives;
 
     before(() => {
@@ -45,7 +45,7 @@ describe('Signature Hashes', function () {
       receives = [
         newAddress([harden(44), harden(COIN_TYPE), harden(1), 0, 0]),
         newAddress([harden(44), harden(COIN_TYPE), harden(2), 0, 0]),
-        newAddress([harden(44), harden(COIN_TYPE), harden(3), 0, 0])
+        newAddress([harden(44), harden(COIN_TYPE), harden(3), 0, 0]),
       ];
     });
 
@@ -56,12 +56,12 @@ describe('Signature Hashes', function () {
       receives = null;
     });
 
-    it('should exist in common', () => {
-      assert('SINGLEREVERSE' in common.hashType);
-      assert(common.hashTypeByVal[SINGLEREVERSE] === 'SINGLEREVERSE');
+    it("should exist in common", () => {
+      assert("SINGLEREVERSE" in common.hashType);
+      assert(common.hashTypeByVal[SINGLEREVERSE] === "SINGLEREVERSE");
     });
 
-    it('should create the correct sighash', () => {
+    it("should create the correct sighash", () => {
       // SINGLEREVERSE commits to the output at the opposite
       // index, meaning that it is the outputs.length - 1 - i'th index,
       // where i is the index of the input. 1 is subtracted from the
@@ -79,7 +79,7 @@ describe('Signature Hashes', function () {
         value: 70000,
         address: addr,
         hash: ONE_HASH,
-        index: 0
+        index: 0,
       });
 
       mtx.addCoin(coin);
@@ -99,7 +99,7 @@ describe('Signature Hashes', function () {
       assert.notBufferEqual(sighash, fail);
     });
 
-    it('should create a valid signature', () => {
+    it("should create a valid signature", () => {
       // create a transaction with 2 outputs and 1 input
       // sign using SINGLEREVERSE and validate signature using mtx.verify()
       const mtx = new MTX();
@@ -114,7 +114,7 @@ describe('Signature Hashes', function () {
         value: 70000,
         address: addr,
         hash: ONE_HASH,
-        index: 0
+        index: 0,
       });
 
       mtx.addCoin(coin);
@@ -123,14 +123,20 @@ describe('Signature Hashes', function () {
       assert.equal(mtx.inputs[0].prevout.index, 0);
 
       const script = Script.fromPubkeyhash(keyring.getHash());
-      const sig = mtx.signature(0, script, 70000, keyring.privateKey, SINGLEREVERSE);
+      const sig = mtx.signature(
+        0,
+        script,
+        70000,
+        keyring.privateKey,
+        SINGLEREVERSE
+      );
       mtx.inputs[0].witness = Witness.fromItems([sig, keyring.publicKey]);
 
       const valid = mtx.verify();
       assert(valid);
     });
 
-    it('should not commit to additional outputs', () => {
+    it("should not commit to additional outputs", () => {
       // create a transaction with 2 outputs and 1 input
       // sign input 0 with SINGLEREVERSE which only
       // commits to output 1, alter output 0 to show that
@@ -146,13 +152,19 @@ describe('Signature Hashes', function () {
         value: 70000,
         address: addr,
         hash: ONE_HASH,
-        index: 0
+        index: 0,
       });
 
       mtx.addCoin(coin);
 
       const script = Script.fromPubkeyhash(keyring.getHash());
-      const sig = mtx.signature(0, script, 70000, keyring.privateKey, SINGLEREVERSE);
+      const sig = mtx.signature(
+        0,
+        script,
+        70000,
+        keyring.privateKey,
+        SINGLEREVERSE
+      );
       mtx.inputs[0].witness = Witness.fromItems([sig, keyring.publicKey]);
 
       assert.deepEqual(mtx.outputs[0].address, receives[0]);
@@ -162,7 +174,7 @@ describe('Signature Hashes', function () {
       // the transaction should still be valid
       mtx.outputs[0] = new Output({
         address: receives[2],
-        value: 0
+        value: 0,
       });
 
       assert.deepEqual(mtx.outputs[0].address, receives[2]);
@@ -172,7 +184,7 @@ describe('Signature Hashes', function () {
       // the transaction should no longer be valid
       mtx.outputs[1] = new Output({
         address: receives[2],
-        value: 0
+        value: 0,
       });
 
       assert.equal(mtx.verify(), false);
@@ -185,7 +197,7 @@ function newKeyRing(path) {
   let key = HDPrivateKey.fromMnemonic(mnemonic);
 
   assert(Array.isArray(path));
-  assert(path.every(index => Number.isSafeInteger(index)));
+  assert(path.every((index) => Number.isSafeInteger(index)));
 
   for (let index of path) {
     let hardened = false;
